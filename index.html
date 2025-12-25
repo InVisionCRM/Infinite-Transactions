@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions on Cruise Control</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Load Decimal.js first -->
+    <script src="public/lib/decimal.js"></script>
+    
+    <script>
+        // Configure Decimal.js
+        if (window.Decimal) {
+            window.Decimal.set({ precision: 20, rounding: 4 });
+            console.log('Decimal.js configured');
+        } else {
+            console.error('Decimal.js not loaded properly');
+        }
+        
+        // Global error handling
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.error('Error:', msg);
+            console.error('URL:', url);
+            console.error('Line:', lineNo);
+            console.error('Column:', columnNo);
+            console.error('Error object:', error);
+            return false;
+        };
+        
+        // Script loading error handling
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'SCRIPT') {
+                console.error('Script loading error:', e.target.src);
+            }
+        }, true);
+    </script>
+    
+    <!-- Load application code after Decimal.js -->
+    <script type="module" src="src/main.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Transactions on Cruise Control</h1>
+        <button id="settingsToggle" aria-label="Toggle Settings Panel">Settings</button>
+    </header>
+
+    <div id="settingsPanel" class="settings-panel hidden">
+        <h2>Global Settings</h2>
+        <div class="settings-content">
+            <!-- Calculation Mode Toggle -->
+            <div class="calculation-mode-toggle">
+                <label class="mode-label">💰 Capital Calculation Method:</label>
+                <div class="toggle-container">
+                    <button id="marketModeBtn" class="mode-btn active">
+                        📈 Market Value
+                    </button>
+                    <button id="backingModeBtn" class="mode-btn">
+                        ✅ Real Backing
+                    </button>
+                </div>
+                <div class="mode-description" id="modeDescription">
+                    Uses full market price of paired tokens. This is how DEXs inflate TVL numbers.
+                </div>
+            </div>
+
+            <div class="wpls-price-control">
+                <label for="wplsPrice">WPLS Price: <span id="wplsPriceValue">$1.00</span></label>
+                <input type="range" id="wplsPrice" min="-6" max="0.69897" step="0.01" value="0">
+                <div class="price-range-labels">
+                    <span>$0.000001</span>
+                    <span>$5.00</span>
+                </div>
+            </div>
+
+            <div class="reflections-settings">
+                <h3>🔄 Reflections</h3>
+                <div>
+                    <label for="defaultOppositeTokenPercentage">Default % to Opposite Token: <span id="oppositeTokenPercentageValue">50%</span></label>
+                    <input type="range" id="defaultOppositeTokenPercentage" min="0" max="100" step="1" value="50">
+                </div>
+                <div>
+                    <label for="defaultGasPercentage">Default % to PLS for Gas: <span id="gasPercentageValue">10%</span></label>
+                    <input type="range" id="defaultGasPercentage" min="0" max="100" step="1" value="10">
+                </div>
+            </div>
+
+            <div class="gas-settings">
+                <h3>⛽ Gas Settings</h3>
+                <div class="gas-toggle">
+                    <label>
+                        <input type="checkbox" id="requireGas" checked>
+                        Require PLS for gas
+                    </label>
+                    <p class="setting-hint">When disabled, transactions won't require or deduct PLS for gas</p>
+                </div>
+                <div id="gasRangeContainer">
+                    <label>Gas Cost Range (PLS): <span id="minGasValue">0.000001</span> - <span id="maxGasValue">0.000005</span></label>
+                    <div class="dual-range-slider">
+                        <input type="range" id="minGlobalGas" min="0.000001" max="1000" step="0.000001" value="0.000001" class="range-min">
+                        <input type="range" id="maxGlobalGas" min="0.000001" max="1000" step="0.000001" value="0.000005" class="range-max">
+                    </div>
+                </div>
+            </div>
+
+            <div class="slippage-settings">
+                <h3>📉 Slippage Settings</h3>
+                <div class="slippage-toggle">
+                    <label>
+                        <input type="checkbox" id="applySlippage" checked>
+                        Apply realistic slippage
+                    </label>
+                    <p class="setting-hint">When enabled, trades experience slippage based on liquidity depth (larger trades = more slippage). When disabled, trades execute at ideal price with no impact.</p>
+                </div>
+            </div>
+
+            <div class="time-settings">
+                <label>Time Interval Range (seconds): <span id="minTimeValue">0.10s</span> - <span id="maxTimeValue">1.00s</span></label>
+                <div class="dual-range-slider">
+                    <input type="range" id="minTimeInterval" min="0.01" max="10" step="0.01" value="0.1" class="range-min">
+                    <input type="range" id="maxTimeInterval" min="0.01" max="10" step="0.01" value="1" class="range-max">
+                </div>
+            </div>
+
+            <div class="routing-settings">
+                <h3>🔀 Multi-Token Routing</h3>
+                <div>
+                    <label for="maxRoutingHops">Maximum Routing Hops: <span id="maxHopsValue">3</span></label>
+                    <input type="range" id="maxRoutingHops" min="1" max="5" step="1" value="3">
+                    <p class="setting-hint">Limits how many intermediate tokens can be used in a route (e.g., USD → Token A → Token B → Target)</p>
+                </div>
+                <div class="routing-confirmation-toggle">
+                    <label>
+                        <input type="checkbox" id="requireRoutingConfirmation">
+                        Require confirmation for multi-hop routes
+                    </label>
+                    <p class="setting-hint">When enabled, you'll be asked to approve routes before execution</p>
+                </div>
+            </div>
+
+            <div class="ui-settings">
+                <h3>🎨 UI Settings</h3>
+                <div>
+                    <label for="globalFontSize">Global Font Size: <span id="fontSizeValue">16px</span></label>
+                    <input type="range" id="globalFontSize" min="12" max="96" value="16">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main id="mainWrapper">
+        <div id="leftContainer" class="token-container">
+            <!-- Token boxes will be dynamically added here -->
+            <button id="addToken" class="add-token-btn">Add Token</button>
+        </div>
+        
+        <div id="rightContainer">
+            <!-- Capital Dashboard -->
+            <div class="capital-dashboard">
+                <h2>💰 Liquidity Web Analysis</h2>
+                <div class="capital-metrics">
+                    <div class="capital-metric real">
+                        <div class="capital-metric-label">Real Capital (WPLS)</div>
+                        <div class="capital-metric-value" id="realCapitalValue">$0.00</div>
+                    </div>
+                    <div class="capital-metric derived">
+                        <div class="capital-metric-label">Derived Value (Tokens)</div>
+                        <div class="capital-metric-value" id="derivedCapitalValue">$0.00</div>
+                    </div>
+                    <div class="capital-metric">
+                        <div class="capital-metric-label">Total Displayed Value</div>
+                        <div class="capital-metric-value" id="totalCapitalValue">$0.00</div>
+                    </div>
+                    <div class="capital-metric leverage">
+                        <div class="capital-metric-label">Leverage Ratio</div>
+                        <div class="capital-metric-value" id="leverageRatioValue">0.00x</div>
+                    </div>
+                </div>
+
+                <!-- Stress Test -->
+                <div class="stress-test-panel">
+                    <h3>⚡ Stress Test: WPLS Price Impact</h3>
+                    <div class="stress-slider-container">
+                        <label for="stressSlider">WPLS Price Change: <span id="stressValue">0%</span></label>
+                        <input type="range" id="stressSlider" class="stress-slider" min="-90" max="200" value="0" step="5">
+                    </div>
+                    <div class="stress-results" id="stressResults">
+                        <p style="color: #666;">Adjust slider to simulate price changes...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cascade Preset Panel -->
+            <div class="cascade-preset-panel">
+                <h3>
+                    <span>🔗</span>
+                    <span>50/50 Cascade Setup</span>
+                </h3>
+                <div class="cascade-info">
+                    <strong>Auto-configure cascading liquidity:</strong> Token A pairs 50% with USD, remaining 50% pairs with Token B, and so on for all tokens.
+                </div>
+                <div class="cascade-controls">
+                    <label for="cascadeUsdAmount">USD per token:</label>
+                    <input type="number" id="cascadeUsdAmount" value="100" min="0" step="0.01" placeholder="100">
+                    <button id="cascadeSetupBtn" class="cascade-btn">Setup Cascade</button>
+                </div>
+            </div>
+
+            <div class="controls-box">
+                <div class="buy-section">
+                    <select id="selectWallet" aria-label="Select Wallet">
+                        <!-- Wallet options will be populated here -->
+                    </select>
+                    <input type="number" id="buyAmount" placeholder="Enter amount in USD" min="0" step="0.01">
+                    <button id="buyButton">Buy</button>
+                </div>
+                <div class="control-buttons">
+                    <button id="pauseButton" class="control-btn">Pause</button>
+                    <button id="resetButton" class="control-btn">Reset History</button>
+                </div>
+                <div class="counters">
+                    <div>Transactions Executed: <span id="transactionCount">0</span></div>
+                    <div>Total Amount Processed: $<span id="totalProcessed">0.00</span></div>
+                </div>
+                <div class="add-funds-section">
+                    <select id="selectPlsToken">
+                        <!-- Token options will be dynamically added here -->
+                    </select>
+                    <input type="number" id="addPlsAmount" placeholder="Enter PLS amount" min="0" step="0.000001">
+                    <button id="addFundsButton">Add PLS</button>
+                    <button id="addAllFundsButton">Add All</button>
+                </div>
+            </div>
+            
+            <div class="transaction-history">
+                <h2>Transaction History</h2>
+                <div class="table-container">
+                    <table id="transactionTable">
+                        <thead>
+                            <tr>
+                                <th>Tx #</th>
+                                <th>Wallet ID</th>
+                                <th>Amount Bought</th>
+                                <th>Token Bought</th>
+                                <th>Tokens Received</th>
+                                <th>Price Impact</th>
+                                <th>Gas Used ($)</th>
+                                <th>PLS Remaining</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Transaction rows will be dynamically added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="metrics">
+        <div>Time Elapsed: <span id="timeElapsed">0</span>s</div>
+        <div>Transactions/min: <span id="transactionsPerMinute">0.00</span></div>
+        <div>PLS Price: $<span id="plsPrice">1.00</span></div>
+        <div>Total Gas Used: $<span id="totalGasUsed">0.000000</span></div>
+    </div>
+</body>
+</html>

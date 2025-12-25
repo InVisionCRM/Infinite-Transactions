@@ -1,0 +1,26 @@
+{
+  "name": "infinite-transactions",
+  "version": "1.0.0",
+  "description": "A trading system simulation with automated sequential buys and token management",
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "prepare": "mkdir -p public/lib && cp node_modules/decimal.js/decimal.js public/lib/",
+    "start": "npm run prepare && serve .",
+    "dev": "npm run prepare && serve -l 3000 .",
+    "build": "npm run prepare",
+    "export": "npm run prepare"
+  },
+  "dependencies": {
+    "decimal.js": "^10.4.3"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "private": true,
+  "author": "",
+  "license": "MIT"
+} 
