@@ -124,6 +124,26 @@ When adding new features, consider the following locations:
    http://localhost:3000
    ```
 
+## Deployment
+
+### Vercel Deployment
+
+This project is configured for easy deployment on Vercel:
+
+1. Connect your GitHub account to Vercel
+2. Import the `InVisionCRM/Infinite-Transactions` repository
+3. Vercel will automatically detect the configuration and deploy
+
+The `vercel.json` file handles the static build configuration, and the build script in `package.json` prepares all necessary assets.
+
+### Local Build
+
+To build locally for production:
+
+```bash
+npm run build
+```
+
 ## Development
 
 - Use ES modules for all imports/exports
