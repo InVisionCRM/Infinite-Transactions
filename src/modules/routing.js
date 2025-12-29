@@ -44,6 +44,8 @@ export function findAllPaths(targetToken, maxDepth = null) {
         maxDepth = state.maxRoutingHops;
     }
 
+    console.log('🔍 Finding paths to token:', targetToken.name, 'maxDepth:', maxDepth);
+
     const paths = [];
     const queue = [[targetToken]]; // Queue of paths (in reverse - target to source)
     const visited = new Set();
@@ -52,15 +54,20 @@ export function findAllPaths(targetToken, maxDepth = null) {
         const currentPath = queue.shift();
         const currentToken = currentPath[currentPath.length - 1];
 
+        console.log('  Exploring:', currentToken.name, 'pairType:', currentToken.pairType, 'pairedTokenId:', currentToken.pairedTokenId);
+
         // Check if we've reached a USD or WPLS pair (source of liquidity)
         if (currentToken.pairType === 'USD' || currentToken.pairType === 'WPLS') {
             // Reverse path to go from source to target
-            paths.push([...currentPath].reverse());
+            const reversedPath = [...currentPath].reverse();
+            console.log('  ✓ Found path:', reversedPath.map(t => t.name).join(' → '));
+            paths.push(reversedPath);
             continue;
         }
 
         // Check depth limit
         if (currentPath.length >= maxDepth) {
+            console.log('  ✗ Depth limit reached');
             continue;
         }
 
@@ -69,12 +76,18 @@ export function findAllPaths(targetToken, maxDepth = null) {
             const pairedToken = state.tokens.find(t => t.id === currentToken.pairedTokenId);
 
             if (pairedToken && !currentPath.some(t => t.id === pairedToken.id)) {
+                console.log('  → Following pair to:', pairedToken.name);
                 // Create new path with paired token
                 queue.push([...currentPath, pairedToken]);
+            } else if (!pairedToken) {
+                console.log('  ✗ Paired token not found! pairedTokenId:', currentToken.pairedTokenId);
             }
+        } else {
+            console.log('  ✗ Not a TOKEN pair, dead end');
         }
     }
 
+    console.log('📊 Total paths found:', paths.length);
     return paths;
 }
 
@@ -194,8 +207,12 @@ export function calculatePathOutput(path, amountIn) {
 function simulateSwap(token, amountIn, inputType, inputToken = null) {
     const Decimal = getDecimal();
 
+    console.log('    🔄 Simulating swap:', amountIn.toString(), inputType, '→', token.name);
+    console.log('       Reserves:', 'Token:', token.tokenReserve.toString(), 'Pair:', token.pairReserve.toString());
+
     // Validate pool has liquidity
     if (token.tokenReserve.isZero() || token.pairReserve.isZero()) {
+        console.log('       ❌ No liquidity in pool');
         return null;
     }
 
@@ -227,6 +244,8 @@ function simulateSwap(token, amountIn, inputType, inputToken = null) {
     const newTokenReserve = token.tokenReserve.minus(tokenOut);
     const priceAfter = newPairReserve.dividedBy(newTokenReserve);
     const priceImpact = priceAfter.minus(priceBefore).dividedBy(priceBefore).times(100);
+
+    console.log('       ✅ Swap successful:', tokenOut.toString(), token.name, 'Impact:', priceImpact.toFixed(2) + '%');
 
     return {
         amountOut: tokenOut,
@@ -275,23 +294,42 @@ function buildPathDescription(path) {
  * @returns {Route|null} Best route or null if no path exists
  */
 export function findBestPath(targetToken, amountIn) {
+    console.log('🎯 Finding best path for', amountIn.toString(), 'USD to', targetToken.name);
+
     const paths = findAllPaths(targetToken);
 
     if (paths.length === 0) {
+        console.log('❌ No paths found to', targetToken.name);
         return null;
     }
 
+    const Decimal = getDecimal();
     let bestRoute = null;
-    let bestOutput = getDecimal().zero();
+    let bestOutput = new Decimal(0);
+
+    console.log('📈 Evaluating', paths.length, 'possible paths:');
 
     // Evaluate each path
     for (const path of paths) {
+        const pathDescription = path.map(t => t.name).join(' → ');
         const route = calculatePathOutput(path, amountIn);
 
-        if (route && route.totalAmountOut.gt(bestOutput)) {
-            bestOutput = route.totalAmountOut;
-            bestRoute = route;
+        if (route) {
+            console.log('  Path:', pathDescription, '→ Output:', route.totalAmountOut.toFixed(4), targetToken.name, 'Impact:', route.totalPriceImpact.toFixed(2) + '%');
+
+            if (route.totalAmountOut.gt(bestOutput)) {
+                bestOutput = route.totalAmountOut;
+                bestRoute = route;
+            }
+        } else {
+            console.log('  Path:', pathDescription, '→ Invalid (no liquidity)');
         }
+    }
+
+    if (bestRoute) {
+        console.log('✅ Best route:', bestRoute.pathDescription, '→', bestRoute.totalAmountOut.toFixed(4), targetToken.name);
+    } else {
+        console.log('❌ No valid routes found (all paths have insufficient liquidity)');
     }
 
     return bestRoute;

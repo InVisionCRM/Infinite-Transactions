@@ -89,7 +89,7 @@ function setupCascade(usdAmount) {
         return;
     }
 
-    console.log(`✓ Token 1: Added ${token1HalfSupply.toString()} tokens with $${usdAmount.toString()} USD`);
+    console.log(`Token 1: Added ${token1HalfSupply.toString()} tokens with $${usdAmount.toString()} USD`);
 
     // Setup cascade for remaining tokens
     for (let i = 1; i < state.tokens.length; i++) {
@@ -121,9 +121,9 @@ function setupCascade(usdAmount) {
         );
 
         if (success) {
-            console.log(`✓ ${currentToken.name}: Added ${currentTokenHalfSupply.toString()} tokens with ${pairAmount.toString()} ${previousToken.name}`);
+            console.log(`${currentToken.name}: Added ${currentTokenHalfSupply.toString()} tokens with ${pairAmount.toString()} ${previousToken.name}`);
         } else {
-            console.warn(`✗ Failed to add liquidity to ${currentToken.name}`);
+            console.warn(`Failed to add liquidity to ${currentToken.name}`);
         }
 
         // Update displays
@@ -139,11 +139,11 @@ function setupCascade(usdAmount) {
 
     // Show success message
     alert(
-        `✓ Cascade setup complete!\n\n` +
+        `Cascade setup complete!\n\n` +
         `${state.tokens.length} tokens configured:\n` +
-        `• Each with 1,000,000 total supply\n` +
-        `• Each with 1,000,000 WPLS balance\n` +
-        `• 500,000 tokens (50%) added to liquidity pools\n\n` +
+        `- Each with 1,000,000 total supply\n` +
+        `- Each with 1,000,000 WPLS balance\n` +
+        `- 500,000 tokens (50%) added to liquidity pools\n\n` +
         `Check the Capital Dashboard to see the leverage effect!`
     );
 }

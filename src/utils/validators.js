@@ -137,22 +137,24 @@ export function validateGas(value, minGas, maxGas) {
 
 /**
  * Validate wallet ID format
- * @param {string} walletId - Wallet ID to validate
+ * @param {string|number} walletId - Wallet ID to validate
  * @returns {ValidationResult} Validation result
  */
 export function validateWalletId(walletId) {
-    if (!walletId || typeof walletId !== 'string') {
+    if (!walletId && walletId !== 0) {
         return {
             isValid: false,
-            message: 'Invalid wallet ID format'
+            message: 'Invalid wallet ID'
         };
     }
 
-    const pattern = /^wallet \d+$/;
-    if (!pattern.test(walletId)) {
+    // Accept numeric IDs (new format) or numeric strings
+    const numericId = typeof walletId === 'number' ? walletId : parseInt(walletId);
+
+    if (isNaN(numericId) || numericId < 1) {
         return {
             isValid: false,
-            message: 'Wallet ID must be in format "wallet X" where X is a number'
+            message: 'Wallet ID must be a valid positive number'
         };
     }
 

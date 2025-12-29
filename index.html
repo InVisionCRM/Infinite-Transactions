@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transactions on Cruise Control</title>
+    <title>PulseChain
+         Sandbox</title>
     <link rel="stylesheet" href="styles.css">
     
     <!-- Load Decimal.js first -->
@@ -41,197 +42,280 @@
 </head>
 <body>
     <header>
-        <h1>Transactions on Cruise Control</h1>
-        <button id="settingsToggle" aria-label="Toggle Settings Panel">Settings</button>
+        <div class="hero-section">
+            <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle Sidebar">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <h1><span class="morbius-text">PulseChain</span> Token Sandbox</h1>
+            <div class="hero-nav">
+                <a href="USER_GUIDE.html" target="_blank" class="guide-link" title="Open comprehensive user guide in new tab">User Guide</a>
+            </div>
+        </div>
     </header>
 
-    <div id="settingsPanel" class="settings-panel hidden">
-        <h2>Global Settings</h2>
-        <div class="settings-content">
-            <!-- Calculation Mode Toggle -->
-            <div class="calculation-mode-toggle">
-                <label class="mode-label">💰 Capital Calculation Method:</label>
-                <div class="toggle-container">
-                    <button id="marketModeBtn" class="mode-btn active">
-                        📈 Market Value
-                    </button>
-                    <button id="backingModeBtn" class="mode-btn">
-                        ✅ Real Backing
-                    </button>
-                </div>
-                <div class="mode-description" id="modeDescription">
-                    Uses full market price of paired tokens. This is how DEXs inflate TVL numbers.
-                </div>
-            </div>
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>Settings</h2>
+            <button id="sidebarClose" class="sidebar-close" aria-label="Close Sidebar">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
 
-            <div class="wpls-price-control">
-                <label for="wplsPrice">WPLS Price: <span id="wplsPriceValue">$1.00</span></label>
-                <input type="range" id="wplsPrice" min="-6" max="0.69897" step="0.01" value="0">
-                <div class="price-range-labels">
-                    <span>$0.000001</span>
-                    <span>$5.00</span>
-                </div>
-            </div>
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-section="capital">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>Capital & Price</span>
+            </button>
+            <button class="nav-item" data-section="reflections">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <span>Reflections</span>
+            </button>
+            <button class="nav-item" data-section="gas">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3h6v18H3z"></path>
+                    <path d="M13 8h8v13H13z"></path>
+                    <path d="M13 3h8v3H13z"></path>
+                    <circle cx="6" cy="12" r="2"></circle>
+                </svg>
+                <span>Gas & Fees</span>
+            </button>
+            <button class="nav-item" data-section="slippage">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <span>Slippage</span>
+            </button>
+            <button class="nav-item" data-section="timing">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>Timing</span>
+            </button>
+            <button class="nav-item" data-section="routing">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                <span>Routing</span>
+            </button>
+            <button class="nav-item" data-section="ui">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+                <span>Interface</span>
+            </button>
+        </nav>
 
-            <div class="reflections-settings">
-                <h3>🔄 Reflections</h3>
-                <div>
-                    <label for="defaultOppositeTokenPercentage">Default % to Opposite Token: <span id="oppositeTokenPercentageValue">50%</span></label>
-                    <input type="range" id="defaultOppositeTokenPercentage" min="0" max="100" step="1" value="50">
-                </div>
-                <div>
-                    <label for="defaultGasPercentage">Default % to PLS for Gas: <span id="gasPercentageValue">10%</span></label>
-                    <input type="range" id="defaultGasPercentage" min="0" max="100" step="1" value="10">
-                </div>
-            </div>
+        <div id="settingsPanel" class="settings-content">
+            <!-- Capital & Price Section -->
+            <section class="settings-section active" data-section="capital">
+                <h3>Capital & Price</h3>
 
-            <div class="gas-settings">
-                <h3>⛽ Gas Settings</h3>
-                <div class="gas-toggle">
-                    <label>
+                <div class="setting-group">
+                    <label class="setting-label">Capital Calculation Method</label>
+                    <div class="toggle-container">
+                        <button id="marketModeBtn" class="mode-btn active" title="Calculate capital using full market value of all paired tokens">
+                            Market Value
+                        </button>
+                        <button id="backingModeBtn" class="mode-btn" title="Calculate capital based on proportional real backing">
+                            Real Backing
+                        </button>
+                    </div>
+                    <div class="mode-description" id="modeDescription">
+                        Uses full market price of paired tokens. This is how DEXs inflate TVL numbers.
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label for="wplsPrice" class="setting-label">WPLS Price: <span id="wplsPriceValue">$1.00</span></label>
+                    <input type="number" id="wplsPrice" step="0.01" value="1.00" title="Enter WPLS price in USD">
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-value="0.000001">$0.000<br>001</button>
+                        <button class="preset-btn" data-value="0.01">$0.01</button>
+                        <button class="preset-btn" data-value="1.00">$1.00</button>
+                        <button class="preset-btn" data-value="5.00">$5.00</button>
+                    </div>
+                    <p class="setting-hint">Set the USD price of WPLS to simulate different market conditions</p>
+                </div>
+            </section>
+
+            <!-- Reflections Section -->
+            <section class="settings-section" data-section="reflections">
+                <h3>Reflections</h3>
+
+                <div class="setting-group">
+                    <label for="defaultOppositeTokenPercentage" class="setting-label">Default % to Opposite Token: <span id="oppositeTokenPercentageValue">50%</span></label>
+                    <input type="number" id="defaultOppositeTokenPercentage" step="1" value="50">
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-value="0">0%</button>
+                        <button class="preset-btn" data-value="25">25%</button>
+                        <button class="preset-btn" data-value="50">50%</button>
+                        <button class="preset-btn" data-value="75">75%</button>
+                        <button class="preset-btn" data-value="100">100%</button>
+                    </div>
+                    <p class="setting-hint">Percentage of each transaction that reflects to the opposite token</p>
+                </div>
+
+                <div class="setting-group">
+                    <label for="defaultGasPercentage" class="setting-label">Default % to PLS for Gas: <span id="gasPercentageValue">10%</span></label>
+                    <input type="number" id="defaultGasPercentage" step="1" value="10">
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-value="0">0%</button>
+                        <button class="preset-btn" data-value="5">5%</button>
+                        <button class="preset-btn" data-value="10">10%</button>
+                        <button class="preset-btn" data-value="25">25%</button>
+                        <button class="preset-btn" data-value="50">50%</button>
+                    </div>
+                    <p class="setting-hint">Percentage of transaction value added as PLS for gas fees</p>
+                </div>
+            </section>
+
+            <!-- Gas & Fees Section -->
+            <section class="settings-section" data-section="gas">
+                <h3>Gas & Fees</h3>
+
+                <div class="setting-group">
+                    <label class="setting-label checkbox-label">
                         <input type="checkbox" id="requireGas" checked>
                         Require PLS for gas
                     </label>
                     <p class="setting-hint">When disabled, transactions won't require or deduct PLS for gas</p>
                 </div>
-                <div id="gasRangeContainer">
-                    <label>Gas Cost Range (PLS): <span id="minGasValue">0.000001</span> - <span id="maxGasValue">0.000005</span></label>
-                    <div class="dual-range-slider">
-                        <input type="range" id="minGlobalGas" min="0.000001" max="1000" step="0.000001" value="0.000001" class="range-min">
-                        <input type="range" id="maxGlobalGas" min="0.000001" max="1000" step="0.000001" value="0.000005" class="range-max">
+
+                <div class="setting-group" id="gasRangeContainer">
+                    <label class="setting-label">Gas Cost Range (PLS): <span id="minGasValue">0.000001</span> - <span id="maxGasValue">0.000005</span></label>
+                    <div class="gas-inputs">
+                        <div class="gas-input-group">
+                            <label for="minGlobalGas">Min:</label>
+                            <input type="number" id="minGlobalGas" step="0.000001" value="0.000001">
+                        </div>
+                        <div class="gas-input-group">
+                            <label for="maxGlobalGas">Max:</label>
+                            <input type="number" id="maxGlobalGas" step="0.000001" value="0.000005">
+                        </div>
+                        <div class="preset-buttons">
+                            <button class="preset-btn" data-target="gas" data-min="1" data-max="20">Sm</button>
+                            <button class="preset-btn" data-target="gas" data-min="20" data-max="100">Med</button>
+                            <button class="preset-btn" data-target="gas" data-min="500" data-max="1500">High</button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="slippage-settings">
-                <h3>📉 Slippage Settings</h3>
-                <div class="slippage-toggle">
-                    <label>
+            <!-- Slippage Section -->
+            <section class="settings-section" data-section="slippage">
+                <h3>Slippage</h3>
+
+                <div class="setting-group">
+                    <label class="setting-label checkbox-label">
                         <input type="checkbox" id="applySlippage" checked>
                         Apply realistic slippage
                     </label>
                     <p class="setting-hint">When enabled, trades experience slippage based on liquidity depth (larger trades = more slippage). When disabled, trades execute at ideal price with no impact.</p>
                 </div>
-            </div>
+            </section>
 
-            <div class="time-settings">
-                <label>Time Interval Range (seconds): <span id="minTimeValue">0.10s</span> - <span id="maxTimeValue">1.00s</span></label>
-                <div class="dual-range-slider">
-                    <input type="range" id="minTimeInterval" min="0.01" max="10" step="0.01" value="0.1" class="range-min">
-                    <input type="range" id="maxTimeInterval" min="0.01" max="10" step="0.01" value="1" class="range-max">
+            <!-- Timing Section -->
+            <section class="settings-section" data-section="timing">
+                <h3>Timing</h3>
+
+                <div class="setting-group">
+                    <label class="setting-label">Time Interval Range (seconds): <span id="minTimeValue">0.10s</span> - <span id="maxTimeValue">1.00s</span></label>
+                    <div class="time-inputs">
+                        <div class="time-input-group">
+                            <label for="minTimeInterval">Min:</label>
+                            <input type="number" id="minTimeInterval" step="0.01" value="0.1">
+                        </div>
+                        <div class="time-input-group">
+                            <label for="maxTimeInterval">Max:</label>
+                            <input type="number" id="maxTimeInterval" step="0.01" value="1">
+                        </div>
+                        <div class="preset-buttons">
+                            <button class="preset-btn" data-target="time" data-min="0.01" data-max="0.1">Fast</button>
+                            <button class="preset-btn" data-target="time" data-min="0.1" data-max="1">Norm</button>
+                            <button class="preset-btn" data-target="time" data-min="1" data-max="5">Slow</button>
+                        </div>
+                    </div>
+                    <p class="setting-hint">Controls the random time delay between automated transactions. Lower values = faster trading, higher values = slower but more realistic simulation.</p>
                 </div>
-            </div>
+            </section>
 
-            <div class="routing-settings">
-                <h3>🔀 Multi-Token Routing</h3>
-                <div>
-                    <label for="maxRoutingHops">Maximum Routing Hops: <span id="maxHopsValue">3</span></label>
-                    <input type="range" id="maxRoutingHops" min="1" max="5" step="1" value="3">
+            <!-- Routing Section -->
+            <section class="settings-section" data-section="routing">
+                <h3>Multi-Token Routing</h3>
+
+                <div class="setting-group">
+                    <label for="maxRoutingHops" class="setting-label">Maximum Routing Hops: <span id="maxHopsValue">3</span></label>
+                    <input type="number" id="maxRoutingHops" step="1" value="3">
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-value="1">1</button>
+                        <button class="preset-btn" data-value="2">2</button>
+                        <button class="preset-btn" data-value="3">3</button>
+                        <button class="preset-btn" data-value="4">4</button>
+                        <button class="preset-btn" data-value="5">5</button>
+                    </div>
                     <p class="setting-hint">Limits how many intermediate tokens can be used in a route (e.g., USD → Token A → Token B → Target)</p>
                 </div>
-                <div class="routing-confirmation-toggle">
-                    <label>
+
+                <div class="setting-group">
+                    <label class="setting-label checkbox-label">
                         <input type="checkbox" id="requireRoutingConfirmation">
                         Require confirmation for multi-hop routes
                     </label>
                     <p class="setting-hint">When enabled, you'll be asked to approve routes before execution</p>
                 </div>
-            </div>
+            </section>
 
-            <div class="ui-settings">
-                <h3>🎨 UI Settings</h3>
-                <div>
-                    <label for="globalFontSize">Global Font Size: <span id="fontSizeValue">16px</span></label>
-                    <input type="range" id="globalFontSize" min="12" max="96" value="16">
+            <!-- UI Section -->
+            <section class="settings-section" data-section="ui">
+                <h3>Interface</h3>
+
+                <div class="setting-group">
+                    <label for="globalFontSize" class="setting-label">Global Font Size: <span id="fontSizeValue">16px</span></label>
+                    <input type="number" id="globalFontSize" value="16">
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-value="12">12px</button>
+                        <button class="preset-btn" data-value="14">14px</button>
+                        <button class="preset-btn" data-value="16">16px</button>
+                        <button class="preset-btn" data-value="18">18px</button>
+                        <button class="preset-btn" data-value="24">24px</button>
+                    </div>
+                    <p class="setting-hint">Adjust the base font size for the entire application</p>
                 </div>
-            </div>
+            </section>
         </div>
-    </div>
+    </aside>
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
     <main id="mainWrapper">
         <div id="leftContainer" class="token-container">
             <!-- Token boxes will be dynamically added here -->
-            <button id="addToken" class="add-token-btn">Add Token</button>
-        </div>
-        
-        <div id="rightContainer">
-            <!-- Capital Dashboard -->
-            <div class="capital-dashboard">
-                <h2>💰 Liquidity Web Analysis</h2>
-                <div class="capital-metrics">
-                    <div class="capital-metric real">
-                        <div class="capital-metric-label">Real Capital (WPLS)</div>
-                        <div class="capital-metric-value" id="realCapitalValue">$0.00</div>
-                    </div>
-                    <div class="capital-metric derived">
-                        <div class="capital-metric-label">Derived Value (Tokens)</div>
-                        <div class="capital-metric-value" id="derivedCapitalValue">$0.00</div>
-                    </div>
-                    <div class="capital-metric">
-                        <div class="capital-metric-label">Total Displayed Value</div>
-                        <div class="capital-metric-value" id="totalCapitalValue">$0.00</div>
-                    </div>
-                    <div class="capital-metric leverage">
-                        <div class="capital-metric-label">Leverage Ratio</div>
-                        <div class="capital-metric-value" id="leverageRatioValue">0.00x</div>
-                    </div>
-                </div>
+            <button id="addToken" class="add-token-btn" title="Add a new token to the simulation">Add Token</button>
 
-                <!-- Stress Test -->
-                <div class="stress-test-panel">
-                    <h3>⚡ Stress Test: WPLS Price Impact</h3>
-                    <div class="stress-slider-container">
-                        <label for="stressSlider">WPLS Price Change: <span id="stressValue">0%</span></label>
-                        <input type="range" id="stressSlider" class="stress-slider" min="-90" max="200" value="0" step="5">
-                    </div>
-                    <div class="stress-results" id="stressResults">
-                        <p style="color: #666;">Adjust slider to simulate price changes...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cascade Preset Panel -->
-            <div class="cascade-preset-panel">
-                <h3>
-                    <span>🔗</span>
-                    <span>50/50 Cascade Setup</span>
-                </h3>
-                <div class="cascade-info">
-                    <strong>Auto-configure cascading liquidity:</strong> Token A pairs 50% with USD, remaining 50% pairs with Token B, and so on for all tokens.
-                </div>
-                <div class="cascade-controls">
-                    <label for="cascadeUsdAmount">USD per token:</label>
-                    <input type="number" id="cascadeUsdAmount" value="100" min="0" step="0.01" placeholder="100">
-                    <button id="cascadeSetupBtn" class="cascade-btn">Setup Cascade</button>
-                </div>
-            </div>
-
-            <div class="controls-box">
-                <div class="buy-section">
-                    <select id="selectWallet" aria-label="Select Wallet">
-                        <!-- Wallet options will be populated here -->
-                    </select>
-                    <input type="number" id="buyAmount" placeholder="Enter amount in USD" min="0" step="0.01">
-                    <button id="buyButton">Buy</button>
-                </div>
-                <div class="control-buttons">
-                    <button id="pauseButton" class="control-btn">Pause</button>
-                    <button id="resetButton" class="control-btn">Reset History</button>
-                </div>
-                <div class="counters">
-                    <div>Transactions Executed: <span id="transactionCount">0</span></div>
-                    <div>Total Amount Processed: $<span id="totalProcessed">0.00</span></div>
-                </div>
-                <div class="add-funds-section">
-                    <select id="selectPlsToken">
-                        <!-- Token options will be dynamically added here -->
-                    </select>
-                    <input type="number" id="addPlsAmount" placeholder="Enter PLS amount" min="0" step="0.000001">
-                    <button id="addFundsButton">Add PLS</button>
-                    <button id="addAllFundsButton">Add All</button>
-                </div>
-            </div>
-            
+            <!-- Transaction History -->
             <div class="transaction-history">
                 <h2>Transaction History</h2>
                 <div class="table-container">
@@ -255,13 +339,417 @@
                 </div>
             </div>
         </div>
+
+        <div id="rightContainer">
+            <!-- Stats & Controls Grid -->
+            <div class="stats-controls-grid">
+                <div class="stat-grid-item" title="Total number of transactions executed">
+                    <span class="stat-grid-label">Transactions</span>
+                    <span class="stat-grid-value" id="transactionCount">0</span>
+                </div>
+                <div class="stat-grid-item" title="Total USD value processed">
+                    <span class="stat-grid-label">Total Processed</span>
+                    <span class="stat-grid-value">$<span id="totalProcessed">0.00</span></span>
+                </div>
+                <div class="stat-grid-item" title="Current PLS price in USD">
+                    <span class="stat-grid-label">PLS Price</span>
+                    <span class="stat-grid-value">$<span id="plsPrice">1.00</span></span>
+                </div>
+                <div class="stat-grid-item" title="Time elapsed since start">
+                    <span class="stat-grid-label">Time Elapsed</span>
+                    <span class="stat-grid-value"><span id="timeElapsed">0</span>s</span>
+                </div>
+                <div class="stat-grid-item" title="Transactions per minute rate">
+                    <span class="stat-grid-label">Transactions/min</span>
+                    <span class="stat-grid-value" id="transactionsPerMinute">0.00</span>
+                </div>
+                <div class="stat-grid-item" title="Total gas fees paid">
+                    <span class="stat-grid-label">Total Gas Used</span>
+                    <span class="stat-grid-value">$<span id="totalGasUsed">0.000000</span></span>
+                </div>
+                <div class="stat-grid-item button-item">
+                    <button id="pauseButton" class="control-btn" title="Pause/Resume automated transaction processing">Pause</button>
+                </div>
+                <div class="stat-grid-item button-item">
+                    <button id="resetButton" class="control-btn" title="Clear transaction history and reset counters">Reset History</button>
+                </div>
+            </div>
+
+            <!-- DEX Swap Card -->
+            <div class="dex-swap-card">
+                <!-- Wallet Selector Header -->
+                <div class="swap-header">
+                    <div class="wallet-selector-container">
+                        <select id="swapWalletSelect" class="swap-wallet-select" title="Select active wallet">
+                            <!-- Wallet options will be populated here -->
+                        </select>
+                    </div>
+                    <button id="swapSettingsBtn" class="swap-settings-btn" title="Swap settings">⚙</button>
+                </div>
+
+                <div class="swap-title-bar">
+                    <h2 class="swap-title">Swap</h2>
+                    <button id="swapRefreshBtn" class="swap-refresh-btn" title="Refresh prices">↻</button>
+                </div>
+
+                <!-- You Pay Section -->
+                <div class="swap-section">
+                    <div class="swap-section-header">
+                        <span class="swap-label">You pay</span>
+                        <span class="swap-balance">Balance: <span id="payBalance">0.00</span> <button class="max-btn" id="payMaxBtn" title="Use maximum balance">MAX</button></span>
+                    </div>
+                    <div class="swap-input-row">
+                        <button class="token-select-btn" id="payTokenBtn" title="Select token to pay with">
+                            <span class="token-icon"></span>
+                            <span class="token-symbol" id="payTokenSymbol">USD</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <input type="number" class="swap-amount-input" id="payAmountInput" placeholder="0.0" min="0" step="0.01" title="Enter amount to pay">
+                    </div>
+                    <div class="swap-usd-value">~$<span id="payUsdValue">0.00</span></div>
+                </div>
+
+                <!-- Swap Direction Toggle -->
+                <div class="swap-direction-container">
+                    <button class="swap-direction-btn" id="swapDirectionBtn" title="Switch buy/sell direction">⇅</button>
+                </div>
+
+                <!-- You Receive Section -->
+                <div class="swap-section">
+                    <div class="swap-section-header">
+                        <span class="swap-label">You receive</span>
+                        <span class="swap-balance">Balance: <span id="receiveBalance">0.00</span></span>
+                    </div>
+                    <div class="swap-input-row">
+                        <button class="token-select-btn" id="receiveTokenBtn" title="Select token to receive">
+                            <span class="token-icon"></span>
+                            <span class="token-symbol" id="receiveTokenSymbol">Select token</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <input type="number" class="swap-amount-input" id="receiveAmountInput" placeholder="0.0" readonly title="Amount you will receive">
+                    </div>
+                    <div class="swap-usd-value">~$<span id="receiveUsdValue">0.00</span></div>
+                </div>
+
+                <!-- Exchange Rate -->
+                <div class="swap-rate-display" id="swapRateDisplay" style="display: none;">
+                    <span id="swapRateText">1 TOKEN = 0.00 USD</span>
+                    <button class="swap-rate-toggle" id="swapRateToggle" title="Toggle rate display">⇄</button>
+                </div>
+
+                <!-- Expandable Details -->
+                <div class="swap-details-container">
+                    <button class="swap-details-toggle" id="swapDetailsToggle">
+                        <span id="swapDetailsSummary">Show details</span>
+                        <span class="toggle-arrow" id="swapDetailsArrow">▼</span>
+                    </button>
+                    <div class="swap-details-content" id="swapDetailsContent" style="display: none;">
+                        <div class="detail-row">
+                            <span class="detail-label">Slippage tolerance</span>
+                            <span class="detail-value">
+                                <button class="edit-slippage-btn" id="editSlippageBtn" title="Edit slippage tolerance">Edit</button>
+                                <span id="slippageValue">0.5%</span>
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Minimum received</span>
+                            <span class="detail-value" id="minimumReceived">0.00</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Price impact</span>
+                            <span class="detail-value" id="priceImpactValue">0.00%</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Network fee</span>
+                            <span class="detail-value" id="networkFeeValue">~$0.00</span>
+                        </div>
+                        <div class="detail-row" id="routeRow" style="display: none;">
+                            <span class="detail-label">Route</span>
+                            <span class="detail-value" id="routeValue">Direct swap</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Swap Button -->
+                <button class="swap-action-btn" id="swapActionBtn" disabled title="Enter an amount to swap">
+                    Enter an amount
+                </button>
+            </div>
+
+            <!-- Swap Card Settings Panel -->
+            <div id="swapSettingsBackdrop" class="swap-settings-backdrop hidden">
+                <div id="swapSettingsPanel" class="swap-settings-panel">
+                    <div class="swap-settings-header">
+                        <h3>Swap Settings</h3>
+                        <button class="close-settings-btn" id="closeSwapSettingsBtn">×</button>
+                    </div>
+                    <div class="swap-settings-body">
+                        <div class="setting-section">
+                            <h4>Quick Actions</h4>
+                            <button class="add-1m-pls-btn" id="add1mPlsBtn" title="Instantly add 1,000,000 PLS to current wallet">
+                                Add 1,000,000 PLS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wallet Balance Panel -->
+            <div class="wallet-balance-panel">
+                <h3 title="View current wallet holdings and balances">Wallet Holdings</h3>
+                <div class="wallet-balance-content">
+                    <div class="balance-item" title="Current USD balance in wallet">
+                        <span class="balance-label">USD:</span>
+                        <span class="balance-value" id="walletUsdBalance">$1,000,000.00</span>
+                    </div>
+                    <div class="balance-item" title="Current PLS balance for gas fees">
+                        <span class="balance-label">PLS:</span>
+                        <span class="balance-value" id="walletPlsBalance">1,000,000.000000</span>
+                    </div>
+                    <div class="token-holdings" id="walletTokenHoldings" title="Owned tokens and quantities">
+                        <div class="holdings-header">Token Holdings:</div>
+                        <div class="holdings-list" id="tokenHoldingsList">
+                            <div class="no-holdings">No tokens owned</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Capital Dashboard -->
+            <div class="capital-dashboard">
+                <h2 title="Analyze liquidity relationships and capital structure">Liquidity Web Analysis</h2>
+                <div class="capital-metrics">
+                    <div class="capital-metric real" title="Real capital backing from WPLS">
+                        <div class="capital-metric-label">Real Capital (WPLS)</div>
+                        <div class="capital-metric-value" id="realCapitalValue">$0.00</div>
+                    </div>
+                    <div class="capital-metric derived" title="Value derived from token pairings">
+                        <div class="capital-metric-label">Derived Value (Tokens)</div>
+                        <div class="capital-metric-value" id="derivedCapitalValue">$0.00</div>
+                    </div>
+                    <div class="capital-metric" title="Total value displayed (real + derived)">
+                        <div class="capital-metric-label">Total Displayed Value</div>
+                        <div class="capital-metric-value" id="totalCapitalValue">$0.00</div>
+                    </div>
+                    <div class="capital-metric leverage" title="Ratio of total displayed value to real capital">
+                        <div class="capital-metric-label">Leverage Ratio</div>
+                        <div class="capital-metric-value" id="leverageRatioValue">0.00x</div>
+                    </div>
+                </div>
+
+                <!-- Stress Test -->
+                <div class="stress-test-panel">
+                    <h3 title="Simulate WPLS price changes and see cascading effects">Stress Test: WPLS Price Impact</h3>
+                    <div class="stress-input-container">
+                        <label for="stressSlider" title="Adjust to simulate WPLS price change">WPLS Price Change: <span id="stressValue">0%</span></label>
+                        <input type="number" id="stressSlider" step="5" value="0" title="Simulate WPLS price change percentage">
+                        <div class="preset-buttons">
+                            <button class="preset-btn" data-value="-90">-90%</button>
+                            <button class="preset-btn" data-value="-50">-50%</button>
+                            <button class="preset-btn" data-value="0">0%</button>
+                            <button class="preset-btn" data-value="50">50%</button>
+                            <button class="preset-btn" data-value="100">100%</button>
+                            <button class="preset-btn" data-value="200">200%</button>
+                        </div>
+                    </div>
+                    <div class="stress-results" id="stressResults">
+                        <p style="color: #666;">Adjust input to simulate price changes...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cascade Preset Panel -->
+            <div class="cascade-preset-panel">
+                <h3 title="Automatically configure 50/50 cascading liquidity across all tokens">
+                    <span>50/50 Cascade Setup</span>
+                </h3>
+                <div class="cascade-info">
+                    <strong>Auto-configure cascading liquidity:</strong> Token A pairs 50% with USD, remaining 50% pairs with Token B, and so on for all tokens.
+                </div>
+                <div class="cascade-controls">
+                    <label for="cascadeUsdAmount" title="USD amount to pair with first token">USD per token:</label>
+                    <input type="number" id="cascadeUsdAmount" value="100" min="0" step="0.01" placeholder="100" title="Enter USD amount for first token pair">
+                    <button id="cascadeSetupBtn" class="cascade-btn" title="Automatically set up 50/50 cascade for all tokens">Setup Cascade</button>
+                </div>
+            </div>
+
+            <!-- Manual Add PLS -->
+            <div class="add-pls-manual">
+                <input type="number" id="addPlsAmount" placeholder="Custom PLS amount" min="0" step="0.000001" title="Enter PLS amount to add to current wallet">
+                <button id="addFundsButton" title="Add PLS to current wallet">Add PLS</button>
+            </div>
+
+            <!-- Automated Trading Panel -->
+            <div class="automated-trading-panel">
+                <h3 title="Configure automated trading strategies to simulate market activity">Automated Trading</h3>
+                <div class="trading-panel-content">
+                    <!-- Strategy Status -->
+                    <div id="strategyStatus" class="strategy-status inactive">
+                        <div class="status-indicator"></div>
+                        <span id="statusText">Inactive</span>
+                    </div>
+
+                    <!-- Active Strategy Info -->
+                    <div id="activeStrategyInfo" class="active-strategy-info hidden">
+                        <div class="info-row">
+                            <span class="info-label">Progress:</span>
+                            <span class="info-value"><span id="strategyProgress">0</span> / <span id="strategyTotal">0</span> trades</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div id="strategyProgressBar" class="progress-bar"></div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Total Spent:</span>
+                            <span class="info-value">$<span id="strategyTotalSpent">0.00</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Avg Impact:</span>
+                            <span class="info-value"><span id="strategyAvgImpact">0.00</span>%</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Time Elapsed:</span>
+                            <span class="info-value"><span id="strategyTimeElapsed">0</span>s</span>
+                        </div>
+                    </div>
+
+                    <!-- Configuration -->
+                    <div id="tradingConfigSection" class="trading-config">
+                        <div class="config-group">
+                            <label for="tokenSelectionMode">Token Selection</label>
+                            <select id="tokenSelectionMode">
+                                <option value="specific">Specific Token</option>
+                                <option value="random">Random</option>
+                                <option value="in-order">In Order</option>
+                                <option value="reverse">Reverse Order</option>
+                            </select>
+                        </div>
+
+                        <div class="config-group" id="specificTokenGroup">
+                            <label for="strategyTargetToken">Target Token</label>
+                            <select id="strategyTargetToken">
+                                <option value="">Select Token</option>
+                            </select>
+                        </div>
+
+                        <div class="config-group">
+                            <label for="tradingMode">Trading Mode</label>
+                            <select id="tradingMode">
+                                <option value="buy-only">Buy Only</option>
+                                <option value="sell-only">Sell Only</option>
+                                <option value="both">Buy & Sell</option>
+                            </select>
+                        </div>
+
+                        <div class="config-group">
+                            <label for="strategyAmount">Amount (USD) <span id="amountDisplay">$100</span></label>
+                            <input type="number" id="strategyAmount" min="1" step="1" value="100">
+                            <div class="preset-chips">
+                                <button class="preset-chip" data-target="strategyAmount" data-value="50">$50</button>
+                                <button class="preset-chip" data-target="strategyAmount" data-value="100">$100</button>
+                                <button class="preset-chip" data-target="strategyAmount" data-value="500">$500</button>
+                                <button class="preset-chip" data-target="strategyAmount" data-value="1000">$1K</button>
+                            </div>
+                        </div>
+
+                        <div class="config-group">
+                            <label for="amountVariance">Amount Randomness <span id="varianceDisplay">±0%</span></label>
+                            <input type="range" id="amountVariance" min="0" max="100" step="5" value="0">
+                            <div class="preset-chips">
+                                <button class="preset-chip" data-target="amountVariance" data-value="0">None</button>
+                                <button class="preset-chip" data-target="amountVariance" data-value="25">Low</button>
+                                <button class="preset-chip" data-target="amountVariance" data-value="50">Med</button>
+                                <button class="preset-chip" data-target="amountVariance" data-value="100">High</button>
+                            </div>
+                        </div>
+
+                        <div class="config-group">
+                            <label for="strategyInterval">Interval (seconds) <span id="intervalDisplay">2.0s</span></label>
+                            <input type="number" id="strategyInterval" min="0.1" step="0.1" value="2">
+                            <div class="preset-chips">
+                                <button class="preset-chip" data-target="strategyInterval" data-value="0.5">0.5s</button>
+                                <button class="preset-chip" data-target="strategyInterval" data-value="2">2s</button>
+                                <button class="preset-chip" data-target="strategyInterval" data-value="5">5s</button>
+                                <button class="preset-chip" data-target="strategyInterval" data-value="10">10s</button>
+                            </div>
+                        </div>
+
+                        <div class="config-group">
+                            <label for="intervalVariance">Interval Randomness <span id="intervalVarianceDisplay">±0%</span></label>
+                            <input type="range" id="intervalVariance" min="0" max="100" step="5" value="0">
+                            <div class="preset-chips">
+                                <button class="preset-chip" data-target="intervalVariance" data-value="0">None</button>
+                                <button class="preset-chip" data-target="intervalVariance" data-value="25">Low</button>
+                                <button class="preset-chip" data-target="intervalVariance" data-value="50">Med</button>
+                                <button class="preset-chip" data-target="intervalVariance" data-value="100">High</button>
+                            </div>
+                        </div>
+
+                        <div class="config-group">
+                            <label for="strategyTradeCount">Number of Trades <span id="tradeCountDisplay">20</span></label>
+                            <input type="number" id="strategyTradeCount" min="1" step="1" value="20">
+                            <div class="preset-chips">
+                                <button class="preset-chip" data-target="strategyTradeCount" data-value="10">10</button>
+                                <button class="preset-chip" data-target="strategyTradeCount" data-value="20">20</button>
+                                <button class="preset-chip" data-target="strategyTradeCount" data-value="50">50</button>
+                                <button class="preset-chip" data-target="strategyTradeCount" data-value="100">100</button>
+                            </div>
+                        </div>
+
+                        <div class="config-group">
+                            <label>
+                                <input type="checkbox" id="continuousMode">
+                                Continuous Mode (loop indefinitely)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="trading-controls">
+                        <button id="startStrategyBtn" class="strategy-btn start-btn">
+                            Start Trading
+                        </button>
+                        <button id="stopStrategyBtn" class="strategy-btn stop-btn hidden">
+                            Stop Trading
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
-    <div class="metrics">
-        <div>Time Elapsed: <span id="timeElapsed">0</span>s</div>
-        <div>Transactions/min: <span id="transactionsPerMinute">0.00</span></div>
-        <div>PLS Price: $<span id="plsPrice">1.00</span></div>
-        <div>Total Gas Used: $<span id="totalGasUsed">0.000000</span></div>
+    <!-- Add Wallet Modal -->
+    <div id="addWalletModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Add New Wallet</h3>
+            <div class="modal-body">
+                <label for="walletNameInput">Wallet Name:</label>
+                <input
+                    type="text"
+                    id="walletNameInput"
+                    placeholder="Wallet 2"
+                    title="Enter custom wallet name or leave blank for default"
+                />
+            </div>
+            <div class="modal-footer">
+                <button id="cancelWalletBtn" class="btn-secondary" title="Cancel and close">Cancel</button>
+                <button id="createWalletBtn" class="btn-primary" title="Create new wallet">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gas Warning Modal -->
+    <div id="gasWarningModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Insufficient Gas</h3>
+            <div class="modal-body">
+                <p>You don't have enough PLS for gas fees.</p>
+                <p>Would you like to disable gas requirements?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="keepGasBtn" class="btn-secondary" title="Keep gas enabled">Keep Gas On</button>
+                <button id="disableGasBtn" class="btn-primary" title="Disable gas requirements">Disable Gas</button>
+            </div>
+        </div>
     </div>
 </body>
 </html>

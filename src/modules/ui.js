@@ -14,6 +14,8 @@ import { formatNumberWithSubscript, formatNumber, formatCurrency } from '../util
  * @property {HTMLElement} addTokenBtn
  * @property {HTMLInputElement} buyAmount
  * @property {HTMLButtonElement} buyButton
+ * @property {HTMLButtonElement} sellButton
+ * @property {HTMLInputElement} sellAmount
  * @property {HTMLInputElement} addPlsAmount
  * @property {HTMLButtonElement} addFundsButton
  * @property {HTMLTableElement} transactionTable
@@ -26,7 +28,7 @@ import { formatNumberWithSubscript, formatNumber, formatCurrency } from '../util
  * @property {HTMLElement} fontSizeValue
  * @property {HTMLInputElement} defaultOppositeTokenPercentage
  * @property {HTMLInputElement} defaultGasPercentage
- * @property {HTMLSelectElement} selectPlsToken
+ * @property {HTMLSelectElement} selectToken
  * @property {HTMLSelectElement} selectWallet
  * @property {HTMLInputElement} minGlobalGas
  * @property {HTMLInputElement} maxGlobalGas
@@ -51,6 +53,8 @@ export const elements = {
     addTokenBtn: document.getElementById('addToken'),
     buyAmount: document.getElementById('buyAmount'),
     buyButton: document.getElementById('buyButton'),
+    sellButton: document.getElementById('sellButton'),
+    sellAmount: document.getElementById('sellAmount'),
     addPlsAmount: document.getElementById('addPlsAmount'),
     addFundsButton: document.getElementById('addFundsButton'),
     transactionTable: document.getElementById('transactionTable').querySelector('tbody'),
@@ -63,7 +67,7 @@ export const elements = {
     fontSizeValue: document.getElementById('fontSizeValue'),
     defaultOppositeTokenPercentage: document.getElementById('defaultOppositeTokenPercentage'),
     defaultGasPercentage: document.getElementById('defaultGasPercentage'),
-    selectPlsToken: document.getElementById('selectPlsToken'),
+    selectToken: document.getElementById('selectToken'),
     selectWallet: document.getElementById('selectWallet'),
     minGlobalGas: document.getElementById('minGlobalGas'),
     maxGlobalGas: document.getElementById('maxGlobalGas'),
@@ -97,11 +101,13 @@ export function initializePage() {
     try {
         bindAddTokenButton();
         initializeSettingsPanel();
+        initializeWalletModal();
         populateWalletDropdown();
-        updatePlsTokenOptions();
+        updateTokenOptions();
         initializeTimeIntervalDisplays();
+        updateWalletBalanceDisplay();
         addFirstToken();
-        
+
         console.log('Page initialization complete');
     } catch (error) {
         console.error('Error during page initialization:', error);
@@ -177,31 +183,162 @@ export function populateWalletDropdown() {
     }
 
     walletSelect.innerHTML = '';
-    
-    // Add default option
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = 'Select Wallet';
-    walletSelect.appendChild(defaultOption);
 
-    // Add wallet options (1-20)
-    for (let i = 1; i <= 20; i++) {
-        const option = document.createElement('option');
-        option.value = `wallet ${i}`;
-        option.textContent = `Wallet ${i}`;
-        walletSelect.appendChild(option);
+    // Add wallet options from state
+    if (state.wallets && state.wallets.length > 0) {
+        state.wallets.forEach(wallet => {
+            const option = document.createElement('option');
+            option.value = wallet.id;
+            option.textContent = wallet.name;
+            walletSelect.appendChild(option);
+        });
+
+        // Auto-select first wallet
+        walletSelect.value = state.wallets[0].id;
+    }
+
+    // Add "Add Wallet" option
+    const addOption = document.createElement('option');
+    addOption.value = 'add_wallet';
+    addOption.textContent = '+ Add Wallet';
+    addOption.style.fontWeight = 'bold';
+    addOption.style.color = '#27ae60';
+    walletSelect.appendChild(addOption);
+
+    // Add change listener for add wallet option
+    walletSelect.removeEventListener('change', handleWalletSelectChange);
+    walletSelect.addEventListener('change', handleWalletSelectChange);
+}
+
+/**
+ * Handle wallet select change
+ * @param {Event} e - Change event
+ */
+async function handleWalletSelectChange(e) {
+    if (e.target.value === 'add_wallet') {
+        showAddWalletModal();
+        // Reset to previous selection
+        if (state.wallets && state.wallets.length > 0) {
+            e.target.value = state.currentWalletId || state.wallets[0].id;
+        }
+    } else {
+        state.currentWalletId = parseInt(e.target.value);
+        // Update wallet balance display when wallet changes
+        await updateWalletBalanceDisplay();
     }
 }
 
 /**
- * Update the PLS token selection dropdown
+ * Show add wallet modal
  */
-export function updatePlsTokenOptions() {
-    const select = elements.selectPlsToken;
+export function showAddWalletModal() {
+    const modal = document.getElementById('addWalletModal');
+    const input = document.getElementById('walletNameInput');
+
+    if (!modal || !input) {
+        console.error('Add wallet modal elements not found');
+        return;
+    }
+
+    // Set placeholder to next wallet number
+    const nextWalletNum = (state.wallets?.length || 0) + 1;
+    input.placeholder = `Wallet ${nextWalletNum}`;
+    input.value = '';
+
+    // Show modal
+    modal.classList.remove('hidden');
+    input.focus();
+}
+
+/**
+ * Hide add wallet modal
+ */
+function hideAddWalletModal() {
+    const modal = document.getElementById('addWalletModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+/**
+ * Create new wallet
+ */
+function createNewWallet() {
+    const input = document.getElementById('walletNameInput');
+    const nextWalletNum = (state.wallets?.length || 0) + 1;
+    const walletName = input?.value?.trim() || `Wallet ${nextWalletNum}`;
+
+    // Import wallet module dynamically
+    import('./wallet.js').then(async module => {
+        const newWallet = module.createWallet(walletName);
+
+        // Refresh wallet dropdown
+        populateWalletDropdown();
+
+        // Refresh swap card wallet dropdown
+        const { updateSwapWallet, updateSwapBalances } = await import('./swapCard.js');
+        updateSwapWallet();
+        updateSwapBalances();
+
+        // Select the new wallet
+        const walletSelect = elements.selectWallet;
+        if (walletSelect) {
+            walletSelect.value = newWallet.id;
+            state.currentWalletId = newWallet.id;
+        }
+
+        // Hide modal
+        hideAddWalletModal();
+
+        console.log(`Created ${walletName}`);
+    });
+}
+
+/**
+ * Initialize wallet modal handlers
+ */
+export function initializeWalletModal() {
+    const createBtn = document.getElementById('createWalletBtn');
+    const cancelBtn = document.getElementById('cancelWalletBtn');
+    const modal = document.getElementById('addWalletModal');
+
+    if (createBtn) {
+        createBtn.addEventListener('click', createNewWallet);
+    }
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', hideAddWalletModal);
+    }
+
+    // Close modal when clicking outside
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                hideAddWalletModal();
+            }
+        });
+    }
+
+    // Handle Enter key in input
+    const input = document.getElementById('walletNameInput');
+    if (input) {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                createNewWallet();
+            }
+        });
+    }
+}
+
+/**
+ * Update the token selection dropdown
+ */
+export function updateTokenOptions() {
+    const select = elements.selectToken;
     if (!select) return;
 
     select.innerHTML = '';
-    
+
     const defaultOption = document.createElement('option');
     defaultOption.value = '';
     defaultOption.textContent = 'Select Token';
@@ -213,6 +350,72 @@ export function updatePlsTokenOptions() {
         option.textContent = token.name;
         select.appendChild(option);
     });
+}
+
+/**
+ * Update wallet balance display
+ */
+export async function updateWalletBalanceDisplay() {
+    const { getWalletById } = await import('./wallet.js');
+    const wallet = getWalletById(state.currentWalletId);
+
+    if (!wallet) return;
+
+    // Update USD balance
+    const usdBalanceEl = document.getElementById('walletUsdBalance');
+    if (usdBalanceEl) {
+        usdBalanceEl.textContent = `$${wallet.usdBalance.toFixed(2)}`;
+    }
+
+    // Update PLS balance
+    const plsBalanceEl = document.getElementById('walletPlsBalance');
+    if (plsBalanceEl) {
+        plsBalanceEl.textContent = wallet.plsBalance.toFixed(6);
+    }
+
+    // Update token holdings
+    const holdingsList = document.getElementById('tokenHoldingsList');
+    if (!holdingsList) return;
+
+    holdingsList.innerHTML = '';
+
+    // Get all token balances
+    const holdings = [];
+    wallet.tokenBalances.forEach((balance, tokenId) => {
+        if (!balance.isZero()) {
+            const token = state.tokens.find(t => t.id === tokenId);
+            if (token) {
+                holdings.push({
+                    name: token.name,
+                    amount: balance
+                });
+            }
+        }
+    });
+
+    if (holdings.length === 0) {
+        const noHoldings = document.createElement('div');
+        noHoldings.className = 'no-holdings';
+        noHoldings.textContent = 'No tokens owned';
+        holdingsList.appendChild(noHoldings);
+    } else {
+        holdings.forEach(holding => {
+            const item = document.createElement('div');
+            item.className = 'holding-item';
+
+            const name = document.createElement('span');
+            name.className = 'holding-token-name';
+            name.textContent = holding.name;
+
+            const amount = document.createElement('span');
+            amount.className = 'holding-token-amount';
+            amount.textContent = holding.amount.toFixed(2);
+
+            item.appendChild(name);
+            item.appendChild(amount);
+            holdingsList.appendChild(item);
+        });
+    }
 }
 
 /**
@@ -260,7 +463,7 @@ export function addTransactionToHistory(walletId, amountBought, tokenBought, gas
 
     // Add route info if available
     if (routeInfo && routeInfo.hops && routeInfo.hops.length > 1) {
-        tokensReceivedText += `<br><span class="route-info" title="${routeInfo.pathDescription}">🔀 ${routeInfo.hops.length} hops</span>`;
+        tokensReceivedText += `<br><span class="route-info" title="${routeInfo.pathDescription}">${routeInfo.hops.length} hops</span>`;
     }
 
     // Format price impact with color coding
@@ -384,10 +587,10 @@ export function clearTransactionHistory() {
  * Handle adding a new token
  * @param {Event} event - Click event
  */
-export function handleAddToken(event) {
+export async function handleAddToken(event) {
     console.log('Handling add token...');
     event.preventDefault();
-    
+
     try {
         if (!state.tokens) {
             state.tokens = [];
@@ -397,29 +600,42 @@ export function handleAddToken(event) {
             alert(`Maximum number of tokens (${state.maxTokens}) reached!`);
             return;
         }
-        
+
         const newTokenId = state.tokens.length + 1;
         console.log('Creating new token with ID:', newTokenId);
-        
+
         const newToken = new Token({ id: newTokenId });
         state.tokens.push(newToken);
-        
+
         const leftContainer = document.getElementById('leftContainer');
         if (!leftContainer) {
             throw new Error('Left container not found during token addition');
         }
-        
+
         const addTokenBtn = leftContainer.querySelector('#addToken');
         if (!addTokenBtn) {
             throw new Error('Add Token button not found during token addition');
         }
-        
+
         leftContainer.insertBefore(newToken.element, addTokenBtn);
-        
+
         // Update token selection options
-        updatePlsTokenOptions();
+        updateTokenOptions();
         state.tokens.forEach(token => token.updateOppositeTokenOptions());
-        
+
+        // Update reflection/burn mechanics token selector
+        const { updateTokenSelectOptions } = await import('./reflectionBurn.js');
+        updateTokenSelectOptions();
+
+        // Update trading strategies token selector
+        const { updateTokenSelect } = await import('./tradingStrategies.js');
+        updateTokenSelect();
+
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
         console.log('New token added successfully:', newTokenId);
     } catch (error) {
         console.error('Error adding new token:', error);

@@ -7,9 +7,7 @@
   "scripts": {
     "prepare": "mkdir -p public/lib && cp node_modules/decimal.js/decimal.js public/lib/",
     "start": "npm run prepare && serve .",
-    "dev": "npm run prepare && serve -l 3000 .",
-    "build": "npm run prepare",
-    "export": "npm run prepare"
+    "dev": "npm run prepare && serve -l 3000 ."
   },
   "dependencies": {
     "decimal.js": "^10.4.3"

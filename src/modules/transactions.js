@@ -6,6 +6,8 @@ import { state, calculateGas, getRandomDelay, addToTotalGasUsed, addToTotalProce
 import { validatePositiveNumber, validateWalletId, validateTokenId } from '../utils/validators.js';
 import { addTransactionToHistory, updateMetricsDisplay } from './ui.js';
 import { findBestPath, executeRoute, getRoutePreview } from './routing.js';
+import { getWalletById } from './wallet.js';
+import { processTransactionMechanics } from './reflectionBurn.js';
 
 /**
  * Get the Decimal instance, throwing an error if it's not available
@@ -64,8 +66,27 @@ export async function processBuy({ amount, walletId, tokenId, isInitialBuy = tru
             return { success: false, error: 'Token not found' };
         }
 
+        // Get wallet
+        const wallet = getWalletById(parseInt(walletId));
+        if (!wallet) {
+            return { success: false, error: 'Wallet not found' };
+        }
+
+        // Check if wallet has enough USD
+        if (wallet.usdBalance.lt(amount)) {
+            return { success: false, error: `Insufficient USD balance. Have: $${wallet.usdBalance.toFixed(2)}, Need: $${amount.toFixed(2)}` };
+        }
+
         // Calculate gas for this transaction (if required)
         const gasUsed = state.requireGas ? calculateGas(amount) : new Decimal(0);
+
+        // Check if wallet has enough PLS for gas
+        if (state.requireGas && wallet.plsBalance.lt(gasUsed)) {
+            // Show gas warning modal
+            const { showGasWarningModal } = await import('./swapCard.js');
+            showGasWarningModal();
+            return { success: false, error: `Insufficient PLS for gas. Have: ${wallet.plsBalance.toFixed(8)} PLS, Need: ${gasUsed.toFixed(8)} PLS` };
+        }
 
         // === AMM + ROUTING INTEGRATION ===
 
@@ -150,20 +171,22 @@ export async function processBuy({ amount, walletId, tokenId, isInitialBuy = tru
             console.log('No liquidity in pool - tracking amount only (no actual buy)');
         }
 
-        // Check if we have enough PLS for gas (only if gas is required)
-        if (state.requireGas && token.plsBalance.lt(gasUsed)) {
-            // Revert the trade if we can't pay gas
-            if (tokensReceived) {
-                token.pairReserve = token.pairReserve.minus(pairAssetAmount);
-                token.tokenReserve = token.tokenReserve.plus(tokensReceived);
-                token.k = token.tokenReserve.times(token.pairReserve);
-            }
-            return { success: false, error: 'Insufficient PLS for gas' };
-        }
-
-        // Deduct gas from PLS balance (only if gas is required)
+        // Execute wallet transfers for successful buy
+        wallet.subtractUSD(amount);
         if (state.requireGas) {
-            token.plsBalance = token.plsBalance.minus(gasUsed);
+            wallet.subtractPLS(gasUsed);
+        }
+        if (tokensReceived) {
+            wallet.addTokenBalance(tokenId, tokensReceived);
+
+            // Apply reflection/burn mechanics if configured
+            const mechanicsResult = processTransactionMechanics(token, tokensReceived, state.wallets);
+            if (mechanicsResult && mechanicsResult.total.gt(0)) {
+                // Deduct the mechanics fees from the user's received amount
+                const netTokensReceived = tokensReceived.minus(mechanicsResult.total);
+                wallet.setTokenBalance(tokenId, wallet.getTokenBalance(tokenId).minus(mechanicsResult.total));
+                tokensReceived = netTokensReceived;
+            }
         }
 
         // Update token's processed amount (USD tracking)
@@ -181,7 +204,7 @@ export async function processBuy({ amount, walletId, tokenId, isInitialBuy = tru
         token.triggerGlowEffect();
 
         // Add transaction to history with AMM data and routing info
-        addTransactionToHistory(walletId, amount, token.id, gasUsed, token.plsBalance, tokensReceived, priceImpact, routeInfo);
+        addTransactionToHistory(walletId, amount, token.id, gasUsed, wallet.plsBalance, tokensReceived, priceImpact, routeInfo);
 
         // Update all prices after trade (important for price chains)
         const { updateAllTokenPrices } = await import('./state.js');
@@ -210,15 +233,194 @@ export async function processBuy({ amount, walletId, tokenId, isInitialBuy = tru
 }
 
 /**
+ * Process a sell transaction
+ * @param {Object} params - Transaction parameters
+ * @param {Decimal} params.tokenAmount - Amount of tokens to sell
+ * @param {string} params.walletId - Wallet identifier
+ * @param {number} params.tokenId - Token to sell
+ * @returns {Promise<TransactionResult>} Transaction result
+ */
+export async function processSell({ tokenAmount, walletId, tokenId }) {
+    // Validate inputs
+    const amountValidation = validatePositiveNumber(tokenAmount);
+    if (!amountValidation.isValid) {
+        return { success: false, error: amountValidation.message };
+    }
+
+    const walletValidation = validateWalletId(walletId);
+    if (!walletValidation.isValid) {
+        return { success: false, error: walletValidation.message };
+    }
+
+    const tokenValidation = validateTokenId(tokenId, state.maxTokens);
+    if (!tokenValidation.isValid) {
+        return { success: false, error: tokenValidation.message };
+    }
+
+    // Check if trading is paused
+    if (state.isPaused) {
+        return { success: false, error: 'Trading is paused' };
+    }
+
+    try {
+        const Decimal = getDecimal();
+        const token = state.tokens.find(t => t.id === tokenId);
+        if (!token) {
+            return { success: false, error: 'Token not found' };
+        }
+
+        // Get wallet
+        const wallet = getWalletById(parseInt(walletId));
+        if (!wallet) {
+            return { success: false, error: 'Wallet not found' };
+        }
+
+        // Check if wallet has enough tokens
+        const walletTokenBalance = wallet.getTokenBalance(tokenId);
+        if (walletTokenBalance.lt(tokenAmount)) {
+            return { success: false, error: `Insufficient token balance. Have: ${walletTokenBalance.toFixed(2)}, Need: ${tokenAmount.toFixed(2)}` };
+        }
+
+        // Check if token has liquidity
+        if (token.pairReserve.isZero() || token.tokenReserve.isZero()) {
+            return { success: false, error: 'No liquidity in pool to sell to' };
+        }
+
+        // Execute AMM sell
+        const sellResult = token.executeSell(tokenAmount);
+
+        if (!sellResult.success) {
+            return { success: false, error: sellResult.error };
+        }
+
+        const pairReceived = sellResult.pairReceived;
+        const priceImpact = sellResult.priceImpact;
+
+        // Calculate USD value received
+        let usdReceived;
+        if (token.pairType === 'USD') {
+            usdReceived = pairReceived;
+        } else if (token.pairType === 'WPLS') {
+            usdReceived = pairReceived.times(state.plsPrice);
+        } else {
+            // TOKEN pair - get paired token's USD price
+            const pairedToken = state.tokens.find(t => t.id === token.pairedTokenId);
+            if (pairedToken) {
+                const pairedTokenUSDPrice = pairedToken.calculateTokenPriceUSD(new Set());
+                usdReceived = pairReceived.times(pairedTokenUSDPrice);
+            } else {
+                usdReceived = new Decimal(0);
+            }
+        }
+
+        // Calculate gas for this transaction (if required)
+        const gasUsed = state.requireGas ? calculateGas(usdReceived) : new Decimal(0);
+
+        // Check if wallet has enough PLS for gas
+        if (state.requireGas && wallet.plsBalance.lt(gasUsed)) {
+            // Revert the sell
+            token.tokenReserve = token.tokenReserve.minus(tokenAmount);
+            token.pairReserve = token.pairReserve.plus(pairReceived);
+            token.k = token.tokenReserve.times(token.pairReserve);
+            // Show gas warning modal
+            const { showGasWarningModal } = await import('./swapCard.js');
+            showGasWarningModal();
+            return { success: false, error: `Insufficient PLS for gas. Have: ${wallet.plsBalance.toFixed(8)} PLS, Need: ${gasUsed.toFixed(8)} PLS` };
+        }
+
+        // Apply reflection/burn mechanics before processing the sell
+        const mechanicsResult = processTransactionMechanics(token, tokenAmount, state.wallets);
+        if (mechanicsResult && mechanicsResult.total.gt(0)) {
+            console.log('Mechanics applied on sell:', {
+                reflection: mechanicsResult.reflection.toString(),
+                burn: mechanicsResult.burn.toString(),
+                lpFee: mechanicsResult.lpFee.toString()
+            });
+        }
+
+        // Execute wallet transfers for successful sell
+        wallet.subtractTokenBalance(tokenId, tokenAmount);
+        if (state.requireGas) {
+            wallet.subtractPLS(gasUsed);
+        }
+
+        // Add received pair asset to wallet
+        if (token.pairType === 'USD') {
+            wallet.addUSD(pairReceived);
+        } else if (token.pairType === 'WPLS') {
+            wallet.addPLS(pairReceived);
+        } else {
+            // TOKEN pair - add received tokens to wallet
+            wallet.addTokenBalance(token.pairedTokenId, pairReceived);
+        }
+
+        // Update token's processed amount (USD tracking)
+        token.amountProcessed = token.amountProcessed.plus(usdReceived);
+
+        // Update global state
+        if (state.requireGas) {
+            addToTotalGasUsed(gasUsed);
+        }
+        addToTotalProcessed(usdReceived);
+        incrementTransactionCount();
+
+        // Update displays
+        token.updateDisplay();
+        token.triggerGlowEffect();
+
+        // Add transaction to history (negative amount for sell)
+        addTransactionToHistory(walletId, usdReceived.negated(), token.id, gasUsed, wallet.plsBalance, tokenAmount.negated(), priceImpact, null);
+
+        // Update all prices after trade
+        const { updateAllTokenPrices } = await import('./state.js');
+        updateAllTokenPrices();
+
+        console.log('Sell executed:', {
+            tokenId: token.id,
+            tokensSold: tokenAmount.toString(),
+            pairReceived: pairReceived.toString(),
+            usdValue: usdReceived.toString(),
+            priceImpact: priceImpact.toFixed(2) + '%'
+        });
+
+        return {
+            success: true,
+            gasUsed,
+            amount: usdReceived,
+            pairReceived: pairReceived,
+            priceImpact: priceImpact
+        };
+
+    } catch (error) {
+        console.error('Sell transaction processing error:', error);
+        return {
+            success: false,
+            error: 'Sell transaction failed: ' + error.message
+        };
+    }
+}
+
+/**
  * Check if the transaction chain should continue
  * @param {Object} token - Current token
  * @param {Decimal} amount - Current transaction amount
  * @returns {boolean} Whether to continue the chain
  */
 function shouldContinueChain(token, amount) {
-    return token.selectedOppositeToken && 
+    const shouldContinue = token.selectedOppositeToken &&
            token.oppositeTokenPercentage.gt(0) &&
            !state.isPaused;
+
+    console.log('shouldContinueChain check:', {
+        tokenId: token.id,
+        tokenName: token.name,
+        selectedOppositeToken: token.selectedOppositeToken,
+        oppositeTokenPercentage: token.oppositeTokenPercentage.toString(),
+        isPaused: state.isPaused,
+        shouldContinue
+    });
+
+    return shouldContinue;
 }
 
 /**
@@ -230,27 +432,48 @@ function shouldContinueChain(token, amount) {
  */
 async function processNextTransaction(currentToken, currentAmount, walletId) {
     const nextToken = state.tokens.find(t => t.id === currentToken.selectedOppositeToken);
-    if (!nextToken) return;
+    if (!nextToken) {
+        console.log('No next token found for ID:', currentToken.selectedOppositeToken);
+        return;
+    }
 
     // Calculate amounts for next transaction
     const plsAmount = currentAmount.times(currentToken.plsPercentage).dividedBy(100);
     const nextAmount = currentAmount.times(currentToken.oppositeTokenPercentage).dividedBy(100);
 
-    // Add PLS to next token's balance
-    nextToken.plsBalance = nextToken.plsBalance.plus(plsAmount);
-    nextToken.updateDisplay();
+    console.log('Processing next transaction:', {
+        currentToken: currentToken.name,
+        nextToken: nextToken.name,
+        currentAmount: currentAmount.toString(),
+        plsPercentage: currentToken.plsPercentage.toString(),
+        oppositeTokenPercentage: currentToken.oppositeTokenPercentage.toString(),
+        plsAmount: plsAmount.toString(),
+        nextAmount: nextAmount.toString()
+    });
+
+    // Add PLS to wallet for next transaction
+    const { getWalletById } = await import('./wallet.js');
+    const wallet = getWalletById(parseInt(walletId));
+    if (wallet && plsAmount.gt(0)) {
+        wallet.addPLS(plsAmount);
+        console.log(`Added ${plsAmount.toString()} PLS to wallet ${walletId}`);
+    }
 
     // Continue the chain if there's a next token and we have an amount
     if (nextToken && nextAmount.gt(0)) {
         const delay = getRandomDelay(walletId);
+        console.log(`Waiting ${delay}ms before next transaction...`);
         await new Promise(resolve => setTimeout(resolve, delay));
-        
+
+        console.log(`Executing buy of ${nextToken.name} with ${nextAmount.toString()} USD`);
         await processBuy({
             amount: nextAmount,
             walletId,
             tokenId: nextToken.id,
             isInitialBuy: false
         });
+    } else {
+        console.log('Chain stopped:', { hasNextToken: !!nextToken, nextAmount: nextAmount.toString() });
     }
 }
 
@@ -264,7 +487,7 @@ async function processNextTransaction(currentToken, currentAmount, walletId) {
 async function confirmRoute(route, amountIn, targetToken) {
     const { formatNumber, formatCurrency } = await import('../utils/formatters.js');
 
-    let message = `🔀 Multi-Hop Routing Required\n\n`;
+    let message = `Multi-Hop Routing Required\n\n`;
     message += `To buy ${targetToken.name}, your trade will route through ${route.hops.length} ${route.hops.length === 1 ? 'swap' : 'swaps'}:\n\n`;
 
     // Show each hop with amounts
@@ -292,48 +515,34 @@ async function confirmRoute(route, amountIn, targetToken) {
 }
 
 /**
- * Add PLS to a token
+ * Add PLS to current wallet
  * @param {Object} params - Parameters for adding PLS
- * @param {number} params.tokenId - Token to add PLS to
  * @param {Decimal} params.amount - Amount of PLS to add
  * @returns {TransactionResult} Transaction result
  */
-export function addPls({ tokenId, amount }) {
+export function addPls({ amount }) {
     const amountValidation = validatePositiveNumber(amount);
     if (!amountValidation.isValid) {
         return { success: false, error: amountValidation.message };
     }
 
-    const tokenValidation = validateTokenId(tokenId, state.maxTokens);
-    if (!tokenValidation.isValid) {
-        return { success: false, error: tokenValidation.message };
+    // Get current wallet
+    const wallet = getWalletById(state.currentWalletId);
+    if (!wallet) {
+        return { success: false, error: 'No wallet selected' };
     }
 
-    const token = state.tokens.find(t => t.id === tokenId);
-    if (!token) {
-        return { success: false, error: 'Token not found' };
-    }
-
-    // Calculate gas for adding PLS (if required)
-    const Decimal = getDecimal();
-    const gasUsed = state.requireGas ? calculateGas(amount) : new Decimal(0);
-    if (state.requireGas) {
-        addToTotalGasUsed(gasUsed);
-    }
-
-    // Add PLS to token balance
-    token.plsBalance = token.plsBalance.plus(amount);
-    token.updateDisplay();
+    // Add PLS to wallet balance
+    wallet.addPLS(amount);
 
     return {
         success: true,
-        gasUsed,
         amount
     };
 }
 
 /**
- * Add PLS to all tokens
+ * Add PLS to all wallets
  * @param {Decimal} totalAmount - Total amount of PLS to distribute
  * @returns {TransactionResult} Transaction result
  */
@@ -343,32 +552,20 @@ export function addPlsToAll(totalAmount) {
         return { success: false, error: amountValidation.message };
     }
 
-    if (state.tokens.length === 0) {
-        return { success: false, error: 'No tokens available' };
+    if (state.wallets.length === 0) {
+        return { success: false, error: 'No wallets available' };
     }
 
-    // Calculate amount per token
-    const amountPerToken = totalAmount.dividedBy(state.tokens.length);
+    // Calculate amount per wallet
+    const amountPerWallet = totalAmount.dividedBy(state.wallets.length);
 
-    // Calculate total gas for all tokens (if required)
-    const Decimal = getDecimal();
-    const gasPerToken = state.requireGas ? calculateGas(amountPerToken) : new Decimal(0);
-    const totalGas = gasPerToken.times(state.tokens.length);
-
-    // Update total gas used
-    if (state.requireGas) {
-        addToTotalGasUsed(totalGas);
-    }
-
-    // Add PLS to each token
-    state.tokens.forEach(token => {
-        token.plsBalance = token.plsBalance.plus(amountPerToken);
-        token.updateDisplay();
+    // Add PLS to each wallet
+    state.wallets.forEach(wallet => {
+        wallet.addPLS(amountPerWallet);
     });
 
     return {
         success: true,
-        gasUsed: totalGas,
         amount: totalAmount
     };
 }

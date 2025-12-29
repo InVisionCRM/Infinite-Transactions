@@ -73,6 +73,14 @@ export class Token {
             this.realCapital = new Decimal('0');  // Actual WPLS deposited
             this.derivedCapital = new Decimal('0');  // Value from token pairs
 
+            // Reflection/Burn Mechanics
+            this.reflectionPercent = new Decimal('0');  // % redistributed to holders
+            this.burnPercent = new Decimal('0');  // % burned from supply
+            this.lpFeePercent = new Decimal('0');  // % added to LP
+            this.totalBurned = new Decimal('0');  // Cumulative burned tokens
+            this.totalReflected = new Decimal('0');  // Cumulative reflected tokens
+            this.lpFeesCollected = new Decimal('0');  // Cumulative LP fees
+
             this.isLiquidityExpanded = false;
             this.element = this.createTokenElement();
 
@@ -81,6 +89,26 @@ export class Token {
             console.error('Error creating token:', error);
             throw error;
         }
+    }
+
+    /**
+     * Invalidate price caches for this token and all tokens that depend on it
+     */
+    invalidatePriceCascade() {
+        // Invalidate this token's cache
+        this.priceLastUpdated = 0;
+
+        // Find all tokens that are paired with this token
+        const dependentTokens = state.tokens.filter(t =>
+            t.pairType === 'TOKEN' && t.pairedTokenId === this.id
+        );
+
+        // Recursively invalidate their caches
+        dependentTokens.forEach(token => {
+            if (token.priceLastUpdated > 0) {
+                token.invalidatePriceCascade();
+            }
+        });
     }
 
     /**
@@ -254,8 +282,8 @@ export class Token {
         this.updateDisplay();
         this.updateLiquidityDisplay();
 
-        // Invalidate price cache
-        this.priceLastUpdated = 0;
+        // Invalidate price cache for this token and all dependent tokens
+        this.invalidatePriceCascade();
 
         console.log('Liquidity added:', {
             tokenId: this.id,
@@ -354,8 +382,8 @@ export class Token {
         // Update legacy property
         this.totalLiquidity = this.pairReserve;
 
-        // Invalidate price cache
-        this.priceLastUpdated = 0;
+        // Invalidate price cache for this token and all dependent tokens
+        this.invalidatePriceCascade();
 
         // Update display
         this.updateDisplay();
@@ -364,6 +392,79 @@ export class Token {
         return {
             success: true,
             tokensReceived: tokenOut,
+            priceImpact: priceImpact,
+            slippageApplied: state.applySlippage,
+            newPrice: this.calculateTokenPriceUSD()
+        };
+    }
+
+    /**
+     * Execute AMM sell (sell this token for pair asset)
+     * @param {Decimal} tokenAmountIn - Amount of tokens to sell
+     * @returns {Object} Result with success, pairReceived, priceImpact, newPrice
+     */
+    executeSell(tokenAmountIn) {
+        const Decimal = getDecimal();
+        const amountIn = new Decimal(tokenAmountIn);
+
+        if (amountIn.lte(0)) {
+            return { success: false, error: 'Amount must be positive' };
+        }
+
+        if (this.pairReserve.isZero() || this.tokenReserve.isZero()) {
+            return { success: false, error: 'No liquidity in pool' };
+        }
+
+        let pairOut;
+        let priceImpact;
+
+        if (state.applySlippage) {
+            // Realistic mode: Use constant product formula
+            pairOut = this.calculateSwapOutput(
+                amountIn,
+                this.tokenReserve,
+                this.pairReserve
+            );
+
+            if (pairOut.gte(this.pairReserve)) {
+                return { success: false, error: 'Insufficient liquidity for this trade' };
+            }
+
+            // Calculate actual price impact
+            priceImpact = this.calculatePriceImpact(amountIn, pairOut);
+        } else {
+            // Ideal mode: No slippage, execute at current price
+            const currentPrice = this.pairReserve.dividedBy(this.tokenReserve);
+            pairOut = amountIn.times(currentPrice);
+
+            if (pairOut.gte(this.pairReserve)) {
+                return { success: false, error: 'Insufficient liquidity for this trade' };
+            }
+
+            // No price impact in ideal mode
+            priceImpact = new Decimal(0);
+        }
+
+        // Update reserves
+        this.tokenReserve = this.tokenReserve.plus(amountIn);
+        this.pairReserve = this.pairReserve.minus(pairOut);
+
+        // Update invariant
+        this.k = this.tokenReserve.times(this.pairReserve);
+
+        // Update legacy property
+        this.totalLiquidity = this.pairReserve;
+
+        // Invalidate price cache for this token and all dependent tokens
+        this.invalidatePriceCascade();
+
+        // Update display
+        this.updateDisplay();
+        this.updateLiquidityDisplay();
+
+        return {
+            success: true,
+            pairReceived: pairOut,
             priceImpact: priceImpact,
             slippageApplied: state.applySlippage,
             newPrice: this.calculateTokenPriceUSD()
@@ -510,136 +611,89 @@ export class Token {
         const template = `
             <div class="token-header">
                 <input type="text" class="token-name-input" value="${this.name}" placeholder="Token Name">
-            </div>
-
-            <!-- Summary Stats (Always Visible) -->
-            <div class="token-summary">
-                <div class="summary-item">
-                    <span class="summary-label">Processed:</span>
-                    <span class="amount-processed">$0.00</span>
+                <div class="token-stats">
+                    <span class="stat"><span class="label">Processed:</span> <span class="amount-processed">$0</span></span>
+                    <span class="stat"><span class="label">Supply:</span> <span class="available-supply">${this.totalSupply.toString()}</span></span>
                 </div>
-                <div class="summary-item">
-                    <span class="summary-label">PLS Balance:</span>
-                    <span class="pls-balance">0.000000</span>
+                <div class="token-stats">
+                    <span class="stat"><span class="label">Price (Pair):</span> <span class="pair-price-display-header">0</span></span>
+                    <span class="stat"><span class="label">Price (USD):</span> <span class="usd-price-display-header">$0</span></span>
                 </div>
-                <div class="summary-item">
-                    <span class="summary-label">Available Supply:</span>
-                    <span class="available-supply">${this.totalSupply.toString()}</span>
+                <div class="token-stats">
+                    <span class="stat"><span class="label">PLS:</span> <span class="pls-balance">0</span></span>
                 </div>
             </div>
 
             <!-- Supply Management Section -->
             <div class="config-section">
-                <button class="section-toggle supply-toggle">
-                    <span>⚙️ Supply & Settings</span>
+                <button class="section-toggle supply-toggle" title="Configure token supply and transaction reflection settings">
+                    <span>Supply & Settings</span>
                     <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16">
                         <path d="M6 9l6 6 6-6" stroke="currentColor" fill="none" stroke-width="2"/>
                     </svg>
                 </button>
                 <div class="section-content hidden">
                     <div>
-                        <label>Total Supply:</label>
-                        <input type="number" class="total-supply-input" value="${this.totalSupply.toString()}" min="0" step="1">
+                        <label title="Total token supply (can only increase)">Total Supply:</label>
+                        <input type="number" class="total-supply-input" value="${this.totalSupply.toString()}" min="0" step="1" title="Set total token supply">
                     </div>
                     <div>
-                        <label>% to Next Token:</label>
-                        <input type="number" class="opposite-token-percentage" min="0" max="100" value="0">
+                        <label title="Percentage that reflects to the selected token after a transaction">% to Next Token:</label>
+                        <input type="number" class="opposite-token-percentage" min="0" max="100" step="0.1" value="${this.oppositeTokenPercentage.toString()}" title="Set reflection percentage to next token">
                     </div>
                     <div>
-                        <label>% to PLS for Next Contract:</label>
-                        <input type="number" class="pls-percentage" min="0" max="100" value="0">
+                        <label title="Percentage added as PLS to next token for gas fees">% to PLS for Next Contract:</label>
+                        <input type="number" class="pls-percentage" min="0" max="100" step="0.1" value="${this.plsPercentage.toString()}" title="Set PLS percentage for next token">
                     </div>
                     <div>
-                        <label>Buy Token:</label>
-                        <select class="opposite-token">
+                        <label title="Select which token receives reflections from this token">Buy Token:</label>
+                        <select class="opposite-token" title="Choose the token to reflect to">
                             ${this.generateOppositeTokenOptions()}
                         </select>
                     </div>
                 </div>
             </div>
 
-            <div class="liquidity-header">
-                <button class="liquidity-toggle">
-                    <span>Liquidity</span>
-                    <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16">
-                        <path d="M6 9l6 6 6-6" stroke="currentColor" fill="none" stroke-width="2"/>
-                    </svg>
-                </button>
-            </div>
+            <button class="section-toggle liquidity-toggle">
+                <span>Liquidity</span>
+                <svg class="chevron-icon" viewBox="0 0 24 24" width="14" height="14">
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" fill="none" stroke-width="2"/>
+                </svg>
+            </button>
             <div class="liquidity-content hidden">
-                <div class="liquidity-section">
-                    <!-- Pair Selection -->
-                    <div class="liquidity-card">
-                        <h4>Pair With</h4>
-                        <select class="pair-select">
-                            <option value="USD" selected>USD (Direct)</option>
-                            <option value="WPLS">WPLS</option>
-                            ${this.generatePairTokenOptions()}
-                        </select>
-                    </div>
-
-                    <!-- Dual-sided Liquidity Input -->
-                    <div class="liquidity-card">
-                        <h4>Add Liquidity</h4>
-                        <div class="liquidity-presets">
-                            <button class="preset-btn preset-50" title="Use 50% of available supply">50% Supply</button>
-                            <button class="preset-btn preset-100" title="Use 100% of available supply">100% Supply</button>
-                            <button class="preset-btn preset-custom" title="Custom amounts">Custom</button>
-                        </div>
-                        <div class="dual-liquidity-inputs">
-                            <div class="liquidity-input-row">
-                                <label>${this.name} Amount:</label>
-                                <input type="number" class="token-amount-input" value="0" min="0" step="0.000001" placeholder="0.0">
-                            </div>
-                            <div class="liquidity-input-row">
-                                <label class="pair-label">USD Amount:</label>
-                                <input type="number" class="pair-amount-input" value="0" min="0" step="0.01" placeholder="0.0">
-                            </div>
-                            <div class="current-ratio">
-                                Current Ratio: <span class="ratio-display">No liquidity yet</span>
-                            </div>
-                            <button class="add-liquidity-btn">Add Liquidity</button>
-                        </div>
-                    </div>
-
-                    <!-- Pool Information -->
-                    <div class="liquidity-card">
-                        <h4>Pool Reserves</h4>
-                        <div class="pool-info">
-                            <div><span>Token Reserve:</span> <span class="token-reserve-display">0</span></div>
-                            <div><span>Pair Reserve:</span> <span class="pair-reserve-display">0</span></div>
-                            <div><span>K Constant:</span> <span class="k-display">0</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Price Information -->
-                    <div class="liquidity-card">
-                        <h4>Price Information</h4>
-                        <div class="price-info">
-                            <div><span>Price in Pair:</span> <span class="pair-price-display">0</span></div>
-                            <div><span>Price in USD:</span> <span class="usd-price-display">$0.00</span></div>
-                            <div><span>LP Tokens:</span> <span class="lp-supply-display">0</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Capital Tracking -->
-                    <div class="liquidity-card capital-tracking-card">
-                        <h4>Capital Analysis</h4>
-                        <div class="capital-info">
-                            <div class="capital-depth">
-                                <span>Liquidity Depth:</span>
-                                <span class="depth-badge depth-display">Not Set</span>
-                            </div>
-                            <div><span>Real Capital:</span> <span class="real-capital-display">$0.00</span></div>
-                            <div><span>Derived Capital:</span> <span class="derived-capital-display">$0.00</span></div>
-                            <div class="capital-bar-container">
-                                <div class="capital-bar">
-                                    <div class="capital-bar-real" style="width: 0%"></div>
-                                    <div class="capital-bar-derived" style="width: 0%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="field-row">
+                    <label>Pair With</label>
+                    <select class="pair-select">
+                        <option value="USD" selected>USD</option>
+                        <option value="WPLS">WPLS</option>
+                        ${this.generatePairTokenOptions()}
+                    </select>
+                </div>
+                <div class="field-row">
+                    <label>${this.name}</label>
+                    <input type="number" class="token-amount-input" value="0" min="0" step="0.000001" placeholder="0.0">
+                </div>
+                <div class="field-row">
+                    <label class="pair-label">USD</label>
+                    <input type="number" class="pair-amount-input" value="0" min="0" step="0.01" placeholder="0.0">
+                </div>
+                <div class="field-row preset-row">
+                    <button class="mini-btn preset-50">50%</button>
+                    <button class="mini-btn preset-100">100%</button>
+                    <button class="add-liquidity-btn">Add Liquidity</button>
+                </div>
+                <div class="info-grid">
+                    <div><span class="token-reserve-label">Token Reserve:</span> <span class="token-reserve-display">0</span></div>
+                    <div><span class="pair-reserve-label">Pair Reserve:</span> <span class="pair-reserve-display">0</span></div>
+                    <div><span>Price (Pair):</span> <span class="pair-price-display">0</span></div>
+                    <div><span>Price (USD):</span> <span class="usd-price-display">$0</span></div>
+                    <div><span>K:</span> <span class="k-display">0</span></div>
+                    <div><span>LP:</span> <span class="lp-supply-display">0</span></div>
+                </div>
+                <div class="capital-row">
+                    <span class="depth-display">Depth: 0</span>
+                    <span class="real-capital-display">Real: $0</span>
+                    <span class="derived-capital-display">Derived: $0</span>
                 </div>
             </div>
         `;
@@ -726,19 +780,47 @@ export class Token {
 
         if (oppositeTokenPercentageInput) {
             oppositeTokenPercentageInput.addEventListener('change', (e) => {
-                this.oppositeTokenPercentage = new Decimal(e.target.value);
+                let value = parseFloat(e.target.value);
+                // Validate range
+                if (value < 0) value = 0;
+                if (value > 100) value = 100;
+                e.target.value = value;
+
+                this.oppositeTokenPercentage = new Decimal(value);
+                console.log(`Token ${this.id}: Set opposite token percentage to ${value}%`);
             });
         }
 
         if (plsPercentageInput) {
             plsPercentageInput.addEventListener('change', (e) => {
-                this.plsPercentage = new Decimal(e.target.value);
+                let value = parseFloat(e.target.value);
+                // Validate range
+                if (value < 0) value = 0;
+                if (value > 100) value = 100;
+                e.target.value = value;
+
+                this.plsPercentage = new Decimal(value);
+                console.log(`Token ${this.id}: Set PLS percentage to ${value}%`);
             });
         }
 
         if (oppositeTokenSelect) {
+            // Set initial value if selectedOppositeToken is already set
+            if (this.selectedOppositeToken) {
+                oppositeTokenSelect.value = this.selectedOppositeToken;
+            }
+
             oppositeTokenSelect.addEventListener('change', (e) => {
-                this.selectedOppositeToken = parseInt(e.target.value);
+                const value = e.target.value;
+                if (value === '' || value === null) {
+                    this.selectedOppositeToken = null;
+                    console.log(`Token ${this.id}: Cleared buy token selection`);
+                } else {
+                    const tokenId = parseInt(value);
+                    this.selectedOppositeToken = tokenId;
+                    const targetToken = state.tokens.find(t => t.id === tokenId);
+                    console.log(`Token ${this.id}: Set buy token to Token ${tokenId} (${targetToken?.name || 'Unknown'})`);
+                }
             });
         }
 
@@ -959,6 +1041,25 @@ export class Token {
             tokenAmountLabels[1].textContent = pairLabelText;
         }
 
+        // Update reserve labels
+        const tokenReserveLabel = this.element.querySelector('.token-reserve-label');
+        const pairReserveLabel = this.element.querySelector('.pair-reserve-label');
+
+        if (tokenReserveLabel) {
+            tokenReserveLabel.textContent = `${this.name}:`;
+        }
+
+        if (pairReserveLabel) {
+            let pairName = 'USD';
+            if (this.pairType === 'WPLS') {
+                pairName = 'WPLS';
+            } else if (this.pairType === 'TOKEN' && this.pairedTokenId) {
+                const pairedToken = state.tokens.find(t => t.id === this.pairedTokenId);
+                pairName = pairedToken ? pairedToken.name : `Token ${this.pairedTokenId}`;
+            }
+            pairReserveLabel.textContent = `${pairName}:`;
+        }
+
         // Update reserves
         const tokenReserveDisplay = this.element.querySelector('.token-reserve-display');
         const pairReserveDisplay = this.element.querySelector('.pair-reserve-display');
@@ -992,22 +1093,38 @@ export class Token {
             }
         }
 
-        // Update prices
+        // Update prices (in liquidity section)
         const pairPriceDisplay = this.element.querySelector('.pair-price-display');
         const usdPriceDisplay = this.element.querySelector('.usd-price-display');
 
+        // Update prices (in header)
+        const pairPriceDisplayHeader = this.element.querySelector('.pair-price-display-header');
+        const usdPriceDisplayHeader = this.element.querySelector('.usd-price-display-header');
+
+        let pairPriceText = '0';
+        let usdPriceText = '$0';
+
+        if (!this.pairReserve.isZero() && !this.tokenReserve.isZero()) {
+            const pairPrice = this.pairReserve.dividedBy(this.tokenReserve);
+            pairPriceText = formatNumber(pairPrice, 6);
+
+            const usdPrice = this.calculateTokenPriceUSD();
+            usdPriceText = formatCurrency(usdPrice, '$', 6);
+        }
+
+        // Update both locations
         if (pairPriceDisplay) {
-            if (!this.pairReserve.isZero() && !this.tokenReserve.isZero()) {
-                const pairPrice = this.pairReserve.dividedBy(this.tokenReserve);
-                pairPriceDisplay.textContent = formatNumber(pairPrice, 0);
-            } else {
-                pairPriceDisplay.textContent = '0';
-            }
+            pairPriceDisplay.textContent = pairPriceText;
+        }
+        if (pairPriceDisplayHeader) {
+            pairPriceDisplayHeader.textContent = pairPriceText;
         }
 
         if (usdPriceDisplay) {
-            const usdPrice = this.calculateTokenPriceUSD();
-            usdPriceDisplay.textContent = formatCurrency(usdPrice, '$', 0);
+            usdPriceDisplay.textContent = usdPriceText;
+        }
+        if (usdPriceDisplayHeader) {
+            usdPriceDisplayHeader.textContent = usdPriceText;
         }
 
         // Update LP supply

@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Transactions - User Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .guide-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem 0;
+            border-bottom: 3px solid #3498db;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+
+        nav {
+            background: #ecf0f1;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        nav h2 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+
+        nav ul {
+            list-style: none;
+        }
+
+        nav li {
+            margin-bottom: 0.5rem;
+        }
+
+        nav a {
+            color: #3498db;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+
+        section {
+            margin-bottom: 3rem;
+            scroll-margin-top: 2rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #3498db;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            color: #34495e;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        h4 {
+            font-size: 1.2rem;
+            color: #34495e;
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        ul, ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .tip-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        code {
+            background: #f8f9fa;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+        }
+
+        .step {
+            background: #f8f9fa;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            border-left: 4px solid #6c757d;
+        }
+
+        .step-number {
+            font-weight: 600;
+            color: #3498db;
+            font-size: 1.1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            border-top: 2px solid #ecf0f1;
+            margin-top: 3rem;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="guide-container">
+        <header>
+            <h1>Infinite Transactions</h1>
+            <p class="subtitle">Complete User Guide & Reference Manual</p>
+        </header>
+
+        <nav>
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#overview">1. Overview & Introduction</a></li>
+                <li><a href="#getting-started">2. Getting Started</a></li>
+                <li><a href="#tokens">3. Token Management</a></li>
+                <li><a href="#liquidity">4. Liquidity & AMM System</a></li>
+                <li><a href="#transactions">5. Executing Transactions</a></li>
+                <li><a href="#reflections">6. Reflection System</a></li>
+                <li><a href="#routing">7. Multi-Token Routing</a></li>
+                <li><a href="#capital">8. Capital Analysis</a></li>
+                <li><a href="#settings">9. Global Settings</a></li>
+                <li><a href="#advanced">10. Advanced Features</a></li>
+                <li><a href="#glossary">11. Glossary</a></li>
+                <li><a href="#troubleshooting">12. Troubleshooting</a></li>
+            </ul>
+        </nav>
+
+        <section id="overview">
+            <h2>1. Overview & Introduction</h2>
+
+            <h3>What is Infinite Transactions?</h3>
+            <p>Infinite Transactions is a sophisticated simulator for Automated Market Maker (AMM) liquidity pools with token pairing, routing, and capital analysis capabilities. It allows you to create complex liquidity networks, simulate trading behavior, and analyze capital efficiency in decentralized finance scenarios.</p>
+
+            <h3>Key Features</h3>
+            <ul>
+                <li><strong>Multi-Token Support:</strong> Create up to 20 different tokens with customizable supplies</li>
+                <li><strong>AMM Liquidity Pools:</strong> Constant product formula (x*y=k) with realistic slippage</li>
+                <li><strong>Flexible Pairing:</strong> Pair tokens with USD, WPLS, or other tokens</li>
+                <li><strong>Multi-Hop Routing:</strong> Automatically find optimal paths through token pairs</li>
+                <li><strong>Reflection System:</strong> Configure transaction reflections between tokens</li>
+                <li><strong>Capital Analysis:</strong> Track real vs derived capital with leverage ratios</li>
+                <li><strong>Stress Testing:</strong> Simulate market volatility and price impacts</li>
+                <li><strong>Transaction History:</strong> Detailed logging of all trades and operations</li>
+            </ul>
+
+            <div class="info-box">
+                <strong>Use Cases:</strong> This simulator is ideal for understanding AMM mechanics, testing liquidity strategies, analyzing capital efficiency, and exploring the effects of complex token pairing networks.
+            </div>
+        </section>
+
+        <section id="getting-started">
+            <h2>2. Getting Started</h2>
+
+            <h3>Quick Start Guide</h3>
+
+            <div class="step">
+                <p class="step-number">Step 1: Add Your First Token</p>
+                <p>Click the <code>Add Token</code> button in the left panel. Your first token card will appear with default settings.</p>
+            </div>
+
+            <div class="step">
+                <p class="step-number">Step 2: Configure Token Supply</p>
+                <p>Click <code>Supply & Settings</code> to expand the token configuration. The default total supply is 1,000,000 tokens. You can adjust this as needed.</p>
+            </div>
+
+            <div class="step">
+                <p class="step-number">Step 3: Add Liquidity</p>
+                <p>Click <code>Liquidity</code> to expand the AMM section. By default, tokens pair with USD. Enter amounts for both the token and USD, then click <code>Add Liquidity</code>.</p>
+            </div>
+
+            <div class="step">
+                <p class="step-number">Step 4: Add PLS for Gas</p>
+                <p>Select your token from the dropdown in the right panel, enter a PLS amount (e.g., 1000), and click <code>Add PLS</code>.</p>
+            </div>
+
+            <div class="step">
+                <p class="step-number">Step 5: Execute Your First Trade</p>
+                <p>Select a wallet from the dropdown, enter a USD amount to buy, and click <code>Buy</code>. The transaction will appear in the history below.</p>
+            </div>
+
+            <div class="tip-box">
+                <strong>Tip:</strong> Use the <code>50/50 Cascade Setup</code> feature to quickly configure multiple tokens with cascading liquidity pairs!
+            </div>
+        </section>
+
+        <section id="tokens">
+            <h2>3. Token Management</h2>
+
+            <h3>Creating Tokens</h3>
+            <p>Click <code>Add Token</code> to create a new token. Each token starts with:</p>
+            <ul>
+                <li>Default name: "Token X" (editable by clicking the name)</li>
+                <li>Total supply: 1,000,000 tokens</li>
+                <li>PLS balance: 0</li>
+                <li>No liquidity added</li>
+            </ul>
+
+            <h3>Token Configuration</h3>
+            <p>Each token card displays three main sections:</p>
+
+            <h4>Summary Stats (Always Visible)</h4>
+            <table>
+                <tr>
+                    <th>Metric</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>Processed</td>
+                    <td>Total USD value processed through this token</td>
+                </tr>
+                <tr>
+                    <td>PLS Balance</td>
+                    <td>Current PLS available for gas fees</td>
+                </tr>
+                <tr>
+                    <td>Available Supply</td>
+                    <td>Tokens not locked in liquidity pools</td>
+                </tr>
+            </table>
+
+            <h4>Supply & Settings</h4>
+            <ul>
+                <li><strong>Total Supply:</strong> Can only increase, never decrease below allocated amounts</li>
+                <li><strong>% to Next Token:</strong> Percentage that reflects to selected token after transactions</li>
+                <li><strong>% to PLS for Next Contract:</strong> PLS percentage added to next token</li>
+                <li><strong>Buy Token:</strong> Select which token receives reflections</li>
+            </ul>
+
+            <h4>Liquidity Section</h4>
+            <p>Configure AMM pools and view pool statistics (covered in detail in Section 4).</p>
+
+            <h3>Editing Token Names</h3>
+            <p>Click the token name at the top of any token card to edit it. Custom names appear throughout the interface including transaction history, dropdowns, and routing confirmations.</p>
+
+            <div class="warning-box">
+                <strong>Important:</strong> Once tokens are added to liquidity pools, their supply cannot be reduced below the amount currently locked in pools.
+            </div>
+        </section>
+
+        <section id="liquidity">
+            <h2>4. Liquidity & AMM System</h2>
+
+            <h3>Understanding AMM Pools</h3>
+            <p>This simulator uses the constant product formula: <code>x * y = k</code></p>
+            <p>Where:</p>
+            <ul>
+                <li><strong>x:</strong> Token reserve in pool</li>
+                <li><strong>y:</strong> Pair asset reserve in pool</li>
+                <li><strong>k:</strong> Constant product (must remain constant)</li>
+            </ul>
+
+            <h3>Pairing Options</h3>
+            <table>
+                <tr>
+                    <th>Pair Type</th>
+                    <th>Description</th>
+                    <th>Price Calculation</th>
+                </tr>
+                <tr>
+                    <td>USD (Direct)</td>
+                    <td>Token directly paired with USD</td>
+                    <td>Direct USD price from pool ratio</td>
+                </tr>
+                <tr>
+                    <td>WPLS</td>
+                    <td>Token paired with WPLS</td>
+                    <td>Pool ratio × WPLS price</td>
+                </tr>
+                <tr>
+                    <td>Another Token</td>
+                    <td>Token paired with another token</td>
+                    <td>Pool ratio × paired token's USD price</td>
+                </tr>
+            </table>
+
+            <h3>Adding Liquidity</h3>
+
+            <h4>Method 1: Preset Buttons</h4>
+            <ul>
+                <li><strong>50% Supply:</strong> Auto-fills with 50% of available supply</li>
+                <li><strong>100% Supply:</strong> Auto-fills with 100% of available supply</li>
+                <li><strong>Custom:</strong> Manually enter both token and pair amounts</li>
+            </ul>
+
+            <h4>Method 2: Manual Entry</h4>
+            <ol>
+                <li>Select your pair type from the dropdown</li>
+                <li>Enter token amount in the first input</li>
+                <li>Enter pair asset amount in the second input</li>
+                <li>Click <code>Add Liquidity</code></li>
+            </ol>
+
+            <div class="info-box">
+                <strong>Initial Liquidity:</strong> For the first liquidity addition, any ratio is accepted. Subsequent additions must match the current pool ratio (±0.1% tolerance).
+            </div>
+
+            <h3>Pool Information Display</h3>
+            <p>After adding liquidity, you'll see:</p>
+            <ul>
+                <li><strong>Token Reserve:</strong> Tokens in the pool</li>
+                <li><strong>Pair Reserve:</strong> Paired assets in the pool</li>
+                <li><strong>K Constant:</strong> The product of reserves</li>
+                <li><strong>Current Ratio:</strong> Exchange rate (e.g., "1 Token = 0.5 USD")</li>
+                <li><strong>Price in Pair:</strong> Token price in paired asset</li>
+                <li><strong>Price in USD:</strong> Token price calculated through pair chain</li>
+                <li><strong>LP Tokens:</strong> Liquidity provider tokens minted</li>
+            </ul>
+
+            <h3>Slippage</h3>
+            <p>Enable or disable slippage in <code>Settings > Slippage Settings</code>:</p>
+            <ul>
+                <li><strong>Enabled (default):</strong> Realistic AMM behavior with price impact based on trade size</li>
+                <li><strong>Disabled:</strong> Trades execute at ideal price with no impact (unrealistic but useful for testing)</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>Tip:</strong> Larger trades relative to pool size experience more slippage. This is fundamental AMM behavior!
+            </div>
+        </section>
+
+        <section id="transactions">
+            <h2>5. Executing Transactions</h2>
+
+            <h3>Buy Transactions</h3>
+
+            <h4>How to Buy</h4>
+            <ol>
+                <li>Select a wallet from the <code>Select Wallet</code> dropdown (Wallet 1-20)</li>
+                <li>Enter the USD amount you want to spend</li>
+                <li>Ensure the target token has liquidity</li>
+                <li>Click <code>Buy</code></li>
+            </ol>
+
+            <h4>What Happens During a Buy</h4>
+            <ol>
+                <li>System calculates tokens received using AMM formula</li>
+                <li>Gas is deducted from token's PLS balance (if gas is enabled)</li>
+                <li>Pool reserves are updated</li>
+                <li>Price impact is calculated</li>
+                <li>Transaction is logged in history</li>
+                <li>If routing is needed, optimal path is found automatically</li>
+            </ol>
+
+            <h3>Adding PLS</h3>
+            <p>PLS (PulseChain native token) is used for gas fees:</p>
+            <ul>
+                <li><strong>Add PLS:</strong> Select token, enter amount, click <code>Add PLS</code></li>
+                <li><strong>Add All:</strong> Distributes entered amount equally across all tokens</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>Warning:</strong> If a token runs out of PLS and gas is required, transactions will fail! Make sure to maintain adequate PLS balances.
+            </div>
+
+            <h3>Transaction History</h3>
+            <p>Each transaction displays:</p>
+            <table>
+                <tr>
+                    <th>Column</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>#</td>
+                    <td>Transaction number</td>
+                </tr>
+                <tr>
+                    <td>Wallet</td>
+                    <td>Which wallet executed the trade</td>
+                </tr>
+                <tr>
+                    <td>Amount Bought</td>
+                    <td>USD amount spent</td>
+                </tr>
+                <tr>
+                    <td>Token Bought</td>
+                    <td>Which token was purchased</td>
+                </tr>
+                <tr>
+                    <td>Tokens Received</td>
+                    <td>Actual tokens received (shows routing info if multi-hop)</td>
+                </tr>
+                <tr>
+                    <td>Price Impact</td>
+                    <td>Slippage percentage (color-coded by severity)</td>
+                </tr>
+                <tr>
+                    <td>Gas Used</td>
+                    <td>PLS spent on gas</td>
+                </tr>
+                <tr>
+                    <td>PLS Remaining</td>
+                    <td>Token's PLS balance after transaction</td>
+                </tr>
+            </table>
+
+            <h3>Control Buttons</h3>
+            <ul>
+                <li><strong>Pause:</strong> Temporarily halt automated transaction processing</li>
+                <li><strong>Reset History:</strong> Clear all transaction logs and reset counters</li>
+            </ul>
+        </section>
+
+        <section id="reflections">
+            <h2>6. Reflection System</h2>
+
+            <h3>What are Reflections?</h3>
+            <p>Reflections create transaction chains where buying one token triggers automated purchases of other tokens. This simulates complex DeFi ecosystems with interconnected tokens.</p>
+
+            <h3>Configuring Reflections</h3>
+            <p>In each token's <code>Supply & Settings</code> section:</p>
+            <ol>
+                <li><strong>Set % to Next Token:</strong> Percentage of transaction value to reflect (0-100%)</li>
+                <li><strong>Set % to PLS:</strong> Percentage added as PLS to next token (0-100%)</li>
+                <li><strong>Choose Buy Token:</strong> Select which token receives the reflection</li>
+            </ol>
+
+            <h3>Example Chain</h3>
+            <div class="step">
+                <p><strong>Setup:</strong></p>
+                <ul>
+                    <li>Token A: 50% to Token B, 10% to PLS</li>
+                    <li>Token B: 30% to Token C, 10% to PLS</li>
+                </ul>
+                <p><strong>Result:</strong></p>
+                <p>Buy $100 of Token A → $50 buys Token B (+$10 PLS to B) → $15 buys Token C (+$5 PLS to C)</p>
+            </div>
+
+            <h3>Global Reflection Defaults</h3>
+            <p>Set default percentages in <code>Settings > Reflections</code>:</p>
+            <ul>
+                <li><strong>Default % to Opposite Token:</strong> Applied to new tokens</li>
+                <li><strong>Default % to PLS for Gas:</strong> PLS allocation for new tokens</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>Tip:</strong> Use reflections to create realistic token ecosystems where trading activity benefits multiple tokens!
+            </div>
+        </section>
+
+        <section id="routing">
+            <h2>7. Multi-Token Routing</h2>
+
+            <h3>What is Routing?</h3>
+            <p>When a token is not directly paired with USD or WPLS, the system automatically finds a path through intermediate tokens to execute the trade.</p>
+
+            <h3>How Routing Works</h3>
+            <p>The simulator uses Breadth-First Search (BFS) to find the optimal route:</p>
+            <ol>
+                <li>Start from tokens paired with USD/WPLS</li>
+                <li>Explore tokens paired with those tokens</li>
+                <li>Continue until target token is reached</li>
+                <li>Calculate total output through each hop</li>
+                <li>Apply 0.3% fee per swap</li>
+            </ol>
+
+            <h3>Routing Example</h3>
+            <div class="step">
+                <p><strong>Scenario:</strong> Buy Token D with $100</p>
+                <ul>
+                    <li>Token A pairs with USD</li>
+                    <li>Token B pairs with Token A</li>
+                    <li>Token C pairs with Token B</li>
+                    <li>Token D pairs with Token C</li>
+                </ul>
+                <p><strong>Route:</strong> USD → Token A → Token B → Token C → Token D</p>
+                <p><strong>Hops:</strong> 4 swaps</p>
+                <p><strong>Total Fees:</strong> 1.2% (0.3% × 4)</p>
+            </div>
+
+            <h3>Routing Settings</h3>
+            <p>Configure in <code>Settings > Multi-Token Routing</code>:</p>
+            <ul>
+                <li><strong>Maximum Routing Hops:</strong> Limit path length (1-5, default 3)</li>
+                <li><strong>Require Confirmation:</strong> Show route details before execution</li>
+            </ul>
+
+            <h3>Route Confirmation Dialog</h3>
+            <p>When confirmation is enabled, you'll see:</p>
+            <ul>
+                <li>Complete route path (e.g., "USD → Token A → Token B → Target")</li>
+                <li>Intermediate amounts at each hop</li>
+                <li>Final tokens received</li>
+                <li>Total price impact</li>
+            </ul>
+
+            <div class="info-box">
+                <strong>Note:</strong> More hops = more fees and higher price impact. Direct pairs are always more efficient!
+            </div>
+        </section>
+
+        <section id="capital">
+            <h2>8. Capital Analysis</h2>
+
+            <h3>Understanding Capital Tracking</h3>
+            <p>The capital dashboard analyzes how much value is "real" versus "derived" in your liquidity network.</p>
+
+            <h3>Calculation Modes</h3>
+            <table>
+                <tr>
+                    <th>Mode</th>
+                    <th>Description</th>
+                    <th>Use Case</th>
+                </tr>
+                <tr>
+                    <td>Market Value</td>
+                    <td>Uses full market price of all paired tokens</td>
+                    <td>Shows inflated TVL (how DEXs report numbers)</td>
+                </tr>
+                <tr>
+                    <td>Real Backing</td>
+                    <td>Proportional real capital based on supply used</td>
+                    <td>Shows true backing and real value</td>
+                </tr>
+            </table>
+
+            <h3>Key Metrics</h3>
+
+            <h4>Real Capital (WPLS)</h4>
+            <p>Actual USD/WPLS backing in the liquidity network. This is "real" capital from the base layer.</p>
+
+            <h4>Derived Value (Tokens)</h4>
+            <p>Value derived from token-to-token pairings. This is created through the pairing structure.</p>
+
+            <h4>Total Displayed Value</h4>
+            <p>Sum of real + derived capital. This is what gets reported as "TVL" in traditional DeFi.</p>
+
+            <h4>Leverage Ratio</h4>
+            <p>Total displayed value ÷ real capital. Shows capital efficiency and leverage.</p>
+            <ul>
+                <li><strong>&lt;1x:</strong> Low leverage (green)</li>
+                <li><strong>1-3x:</strong> Medium leverage (orange)</li>
+                <li><strong>3-5x:</strong> High leverage (dark orange)</li>
+                <li><strong>&gt;5x:</strong> Extreme leverage (red)</li>
+            </ul>
+
+            <h3>Liquidity Depth</h3>
+            <p>Each token shows its "depth" - the number of hops from real capital:</p>
+            <ul>
+                <li><strong>Depth 0:</strong> Directly paired with USD or WPLS (real capital)</li>
+                <li><strong>Depth 1:</strong> One hop from real capital</li>
+                <li><strong>Depth 2+:</strong> Multiple hops from real capital</li>
+            </ul>
+
+            <h3>Stress Testing</h3>
+            <p>Simulate WPLS price changes and see cascading effects:</p>
+            <ol>
+                <li>Adjust the <code>WPLS Price Change</code> slider (-90% to +200%)</li>
+                <li>View new WPLS price</li>
+                <li>See average impact across all tokens</li>
+                <li>Identify most vulnerable token</li>
+                <li>Review per-token impact breakdown</li>
+            </ol>
+
+            <div class="warning-box">
+                <strong>Warning:</strong> Tokens at higher depths are more vulnerable to base layer price changes!
+            </div>
+        </section>
+
+        <section id="settings">
+            <h2>9. Global Settings</h2>
+
+            <h3>Capital Calculation Method</h3>
+            <ul>
+                <li><strong>Market Value:</strong> Standard DEX methodology (inflated)</li>
+                <li><strong>Real Backing:</strong> True proportional backing calculation</li>
+            </ul>
+
+            <h3>WPLS Price</h3>
+            <p>Set simulated WPLS price from $0.000001 to $5.00. Affects:</p>
+            <ul>
+                <li>All WPLS-paired token prices</li>
+                <li>Cascading price calculations for token-paired assets</li>
+                <li>Capital analysis metrics</li>
+            </ul>
+
+            <h3>Reflections</h3>
+            <ul>
+                <li><strong>Default % to Opposite Token:</strong> Initial reflection percentage for new tokens</li>
+                <li><strong>Default % to PLS for Gas:</strong> Initial PLS allocation for new tokens</li>
+            </ul>
+
+            <h3>Gas Settings</h3>
+            <ul>
+                <li><strong>Require PLS for gas:</strong> Toggle gas requirements on/off</li>
+                <li><strong>Gas Cost Range:</strong> Set min/max gas per transaction (dual slider)</li>
+            </ul>
+
+            <h3>Slippage Settings</h3>
+            <ul>
+                <li><strong>Apply realistic slippage:</strong> Toggle AMM slippage calculation</li>
+                <li>Enabled = realistic (recommended)</li>
+                <li>Disabled = ideal pricing (testing only)</li>
+            </ul>
+
+            <h3>Time Interval Range</h3>
+            <p>Set delay between automated transactions (0.01 - 10 seconds). Uses dual slider for min/max range.</p>
+
+            <h3>Multi-Token Routing</h3>
+            <ul>
+                <li><strong>Maximum Routing Hops:</strong> Limit path length (1-5)</li>
+                <li><strong>Require confirmation:</strong> Show route before execution</li>
+            </ul>
+
+            <h3>UI Settings</h3>
+            <ul>
+                <li><strong>Global Font Size:</strong> Adjust base font (12-96px)</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>Tip:</strong> Hover over any setting for a detailed tooltip explanation!
+            </div>
+        </section>
+
+        <section id="advanced">
+            <h2>10. Advanced Features</h2>
+
+            <h3>50/50 Cascade Setup</h3>
+            <p>Automatically configure cascading liquidity across all tokens:</p>
+            <ol>
+                <li>Add multiple tokens (minimum 2)</li>
+                <li>Set USD amount for first token (e.g., $100)</li>
+                <li>Click <code>Setup Cascade</code></li>
+                <li>Review confirmation dialog</li>
+                <li>Confirm to auto-configure</li>
+            </ol>
+
+            <h4>What Happens:</h4>
+            <ul>
+                <li>Each token gets 1,000,000 total supply</li>
+                <li>Each token gets 1,000,000 WPLS balance</li>
+                <li>Token 1: 500,000 tokens (50%) pairs with specified USD amount</li>
+                <li>Token 2: 500,000 tokens pairs with remaining 500,000 Token 1</li>
+                <li>Token 3: 500,000 tokens pairs with remaining 500,000 Token 2</li>
+                <li>Pattern continues for all tokens</li>
+            </ul>
+
+            <h3>Complex Routing Scenarios</h3>
+
+            <h4>Circular Pairing Prevention</h4>
+            <p>The system uses visited sets to prevent infinite loops in circular pair configurations.</p>
+
+            <h4>Price Caching</h4>
+            <p>Token prices are cached for 1 second to optimize performance during rapid transactions.</p>
+
+            <h3>Transaction Chains</h3>
+            <p>Create complex transaction flows using reflections and routing:</p>
+            <ol>
+                <li>Set up token pairing network</li>
+                <li>Configure reflection percentages</li>
+                <li>Execute buy on first token</li>
+                <li>Watch automatic chain reactions</li>
+            </ol>
+
+            <h3>Capital Leverage Strategies</h3>
+
+            <h4>Low Leverage (Safe)</h4>
+            <ul>
+                <li>All tokens pair directly with USD/WPLS</li>
+                <li>Leverage ratio &lt; 1.5x</li>
+                <li>Minimal price impact risk</li>
+            </ul>
+
+            <h4>Medium Leverage (Balanced)</h4>
+            <ul>
+                <li>Mix of direct and token pairings</li>
+                <li>Leverage ratio 1.5-3x</li>
+                <li>Moderate efficiency with controlled risk</li>
+            </ul>
+
+            <h4>High Leverage (Risky)</h4>
+            <ul>
+                <li>Deep token pairing chains</li>
+                <li>Leverage ratio &gt; 3x</li>
+                <li>High capital efficiency but vulnerable to base layer movements</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>Warning:</strong> High leverage multiplies both gains AND losses from price movements!
+            </div>
+        </section>
+
+        <section id="glossary">
+            <h2>11. Glossary</h2>
+
+            <table>
+                <tr>
+                    <th>Term</th>
+                    <th>Definition</th>
+                </tr>
+                <tr>
+                    <td>AMM</td>
+                    <td>Automated Market Maker - algorithmic trading using liquidity pools instead of order books</td>
+                </tr>
+                <tr>
+                    <td>Constant Product Formula</td>
+                    <td>x * y = k, where reserves multiply to a constant</td>
+                </tr>
+                <tr>
+                    <td>Derived Capital</td>
+                    <td>Value created through token-to-token pairings without direct USD/WPLS backing</td>
+                </tr>
+                <tr>
+                    <td>Depth</td>
+                    <td>Number of hops from a token to real capital (USD/WPLS)</td>
+                </tr>
+                <tr>
+                    <td>Hop</td>
+                    <td>One swap in a multi-token routing path</td>
+                </tr>
+                <tr>
+                    <td>Leverage Ratio</td>
+                    <td>Total displayed value divided by real capital</td>
+                </tr>
+                <tr>
+                    <td>Liquidity</td>
+                    <td>Assets deposited in a trading pool to facilitate swaps</td>
+                </tr>
+                <tr>
+                    <td>LP Tokens</td>
+                    <td>Liquidity Provider tokens representing pool ownership</td>
+                </tr>
+                <tr>
+                    <td>Pair Reserve</td>
+                    <td>Amount of paired asset (USD/WPLS/Token) in liquidity pool</td>
+                </tr>
+                <tr>
+                    <td>Price Impact</td>
+                    <td>Percentage price change caused by a trade (slippage)</td>
+                </tr>
+                <tr>
+                    <td>Real Capital</td>
+                    <td>Actual USD/WPLS backing in the system</td>
+                </tr>
+                <tr>
+                    <td>Reflection</td>
+                    <td>Automated transaction triggered by another transaction</td>
+                </tr>
+                <tr>
+                    <td>Routing</td>
+                    <td>Finding a path through multiple token pairs to execute a trade</td>
+                </tr>
+                <tr>
+                    <td>Slippage</td>
+                    <td>Difference between expected and actual trade price due to market impact</td>
+                </tr>
+                <tr>
+                    <td>Token Reserve</td>
+                    <td>Amount of tokens in a liquidity pool</td>
+                </tr>
+                <tr>
+                    <td>TVL</td>
+                    <td>Total Value Locked - sum of all assets in liquidity pools</td>
+                </tr>
+                <tr>
+                    <td>WPLS</td>
+                    <td>Wrapped PulseChain token used for gas and pairing</td>
+                </tr>
+            </table>
+        </section>
+
+        <section id="troubleshooting">
+            <h2>12. Troubleshooting</h2>
+
+            <h3>Common Issues & Solutions</h3>
+
+            <h4>Transaction Fails: "Insufficient PLS for gas"</h4>
+            <p><strong>Solution:</strong> Add PLS to the token using the <code>Add PLS</code> section in the right panel. Select the token and add at least 100-1000 PLS.</p>
+
+            <h4>Cannot Add Liquidity: "Ratio mismatch"</h4>
+            <p><strong>Solution:</strong> After initial liquidity, subsequent additions must match the current pool ratio. Check the <code>Current Ratio</code> display and adjust your amounts accordingly.</p>
+
+            <h4>Buy Button Doesn't Work</h4>
+            <p><strong>Checklist:</strong></p>
+            <ul>
+                <li>Is a wallet selected?</li>
+                <li>Is the amount &gt; 0?</li>
+                <li>Does the target token have liquidity?</li>
+                <li>Does the token have enough PLS for gas?</li>
+            </ul>
+
+            <h4>No Route Found for Token Purchase</h4>
+            <p><strong>Solution:</strong> The token must be connected to USD/WPLS through a chain of pairs. Check that:</p>
+            <ul>
+                <li>Token has liquidity added</li>
+                <li>Paired token (if any) has liquidity</li>
+                <li>There's a path to USD/WPLS within max hops</li>
+            </ul>
+
+            <h4>Price Shows $0.00</h4>
+            <p><strong>Solution:</strong> Add liquidity to the token's pool. Price cannot be calculated without reserves.</p>
+
+            <h4>Leverage Ratio Shows NaN or Infinity</h4>
+            <p><strong>Solution:</strong> This occurs when there's no real capital (WPLS) in the system. Add liquidity using USD or WPLS pairs.</p>
+
+            <h4>Transaction History Not Showing</h4>
+            <p><strong>Solution:</strong> Scroll down in the right panel. History is below the controls box.</p>
+
+            <h4>Capital Metrics Not Updating</h4>
+            <p><strong>Solution:</strong> Capital calculations update after transactions. Execute a trade or add liquidity to trigger updates.</p>
+
+            <h3>Best Practices</h3>
+            <ul>
+                <li>Always add liquidity before attempting trades</li>
+                <li>Maintain adequate PLS balances for gas</li>
+                <li>Start with direct USD pairs before creating complex networks</li>
+                <li>Use stress testing to understand vulnerability</li>
+                <li>Enable routing confirmation when learning</li>
+                <li>Monitor leverage ratio to avoid excessive risk</li>
+            </ul>
+
+            <h3>Performance Tips</h3>
+            <ul>
+                <li>Limit token count to 10-15 for optimal performance</li>
+                <li>Use reasonable transaction amounts (avoid tiny or huge values)</li>
+                <li>Clear transaction history periodically using <code>Reset History</code></li>
+                <li>Reduce max routing hops if routing is slow</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p>&copy; 2024 Infinite Transactions Simulator</p>
+            <p>For additional support, refer to this guide or experiment in the simulator!</p>
+        </footer>
+    </div>
+</body>
+</html>

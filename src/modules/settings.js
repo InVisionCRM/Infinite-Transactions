@@ -48,9 +48,9 @@ export function initializeSettings() {
  * Bind event listeners to settings controls
  */
 function bindSettingsEvents() {
-    const wplsPriceSlider = document.getElementById('wplsPrice');
-    if (wplsPriceSlider) {
-        wplsPriceSlider.addEventListener('input', handleWplsPriceChange);
+    const wplsPriceInput = document.getElementById('wplsPrice');
+    if (wplsPriceInput) {
+        wplsPriceInput.addEventListener('input', handleWplsPriceChange);
     }
 
     if (elements.globalFontSize) {
@@ -103,12 +103,77 @@ function bindSettingsEvents() {
     if (applySlippage) {
         applySlippage.addEventListener('change', handleApplySlippageChange);
     }
+
+    // Bind preset button events using event delegation
+    bindPresetButtonEvents();
+}
+
+/**
+ * Bind event listeners for preset buttons using event delegation
+ */
+function bindPresetButtonEvents() {
+    const settingsPanel = document.getElementById('settingsPanel');
+    if (settingsPanel) {
+        settingsPanel.addEventListener('click', (e) => {
+            if (e.target.classList.contains('preset-btn')) {
+                handlePresetButtonClick(e);
+            }
+        });
+    }
+}
+
+/**
+ * Handle preset button clicks
+ * @param {Event} e - Click event
+ */
+function handlePresetButtonClick(e) {
+    const button = e.target;
+    const value = button.dataset.value;
+    const target = button.dataset.target;
+    const minValue = button.dataset.min;
+    const maxValue = button.dataset.max;
+
+    if (target === 'gas') {
+        // Handle dual-input gas presets
+        if (elements.minGlobalGas && minValue) {
+            elements.minGlobalGas.value = minValue;
+            handleMinGasChange({ target: elements.minGlobalGas });
+        }
+        if (elements.maxGlobalGas && maxValue) {
+            elements.maxGlobalGas.value = maxValue;
+            handleMaxGasChange({ target: elements.maxGlobalGas });
+        }
+    } else if (target === 'time') {
+        // Handle dual-input time presets
+        if (elements.minTimeInterval && minValue) {
+            elements.minTimeInterval.value = minValue;
+            handleMinTimeIntervalChange({ target: elements.minTimeInterval });
+        }
+        if (elements.maxTimeInterval && maxValue) {
+            elements.maxTimeInterval.value = maxValue;
+            handleMaxTimeIntervalChange({ target: elements.maxTimeInterval });
+        }
+    } else if (value !== undefined) {
+        // Handle single-input presets
+        const inputId = button.closest('.wpls-price-control, .reflections-settings, .routing-settings, .ui-settings, .stress-test-panel').querySelector('input[type="number"]');
+        if (inputId) {
+            inputId.value = value;
+            inputId.dispatchEvent(new Event('input'));
+        }
+    }
 }
 
 /**
  * Load initial settings values
  */
 function loadInitialSettings() {
+    // WPLS Price - set to $1.00
+    const wplsPriceInput = document.getElementById('wplsPrice');
+    if (wplsPriceInput) {
+        wplsPriceInput.value = '1.00';
+        handleWplsPriceChange({ target: wplsPriceInput });
+    }
+
     if (elements.globalFontSize) {
         elements.globalFontSize.value = '16';
         handleFontSizeChange({ target: elements.globalFontSize });
@@ -136,6 +201,12 @@ function loadInitialSettings() {
 
     if (elements.maxTimeInterval && state.maxTimeInterval) {
         elements.maxTimeInterval.value = state.maxTimeInterval.toString();
+    }
+
+    // Max routing hops
+    const maxRoutingHops = document.getElementById('maxRoutingHops');
+    if (maxRoutingHops) {
+        maxRoutingHops.value = '3';
     }
 }
 
@@ -173,10 +244,12 @@ function updateSettingsDisplay() {
  */
 function handleWplsPriceChange(e) {
     const Decimal = getDecimal();
-    // Slider uses log scale: 10^value
-    // Range: -6 to 0.69897 (10^-6 = 0.000001, 10^0.69897 ≈ 5)
-    const logValue = parseFloat(e.target.value);
-    const price = Math.pow(10, logValue);
+    const price = parseFloat(e.target.value);
+
+    // Validate input
+    if (isNaN(price) || price <= 0) {
+        return;
+    }
 
     state.plsPrice = new Decimal(price.toString());
 
@@ -285,16 +358,9 @@ function handleMinGasChange(e) {
     const Decimal = getDecimal();
     let newMin = new Decimal(e.target.value);
 
-    // Ensure min doesn't exceed max
-    if (newMin.gt(state.maxGlobalGas)) {
-        newMin = state.maxGlobalGas;
-        e.target.value = newMin.toString();
-    }
-
-    const validation = validateGas(newMin, new Decimal(0), new Decimal('1000'));
-
-    if (!validation.isValid) {
-        alert(validation.message);
+    // Basic validation - just ensure it's a positive number
+    if (newMin.lte(0)) {
+        alert('Gas cost must be greater than 0');
         e.target.value = state.minGlobalGas.toString();
         return;
     }
@@ -316,16 +382,9 @@ function handleMaxGasChange(e) {
     const Decimal = getDecimal();
     let newMax = new Decimal(e.target.value);
 
-    // Ensure max doesn't go below min
-    if (newMax.lt(state.minGlobalGas)) {
-        newMax = state.minGlobalGas;
-        e.target.value = newMax.toString();
-    }
-
-    const validation = validateGas(newMax, state.minGlobalGas, new Decimal('1000'));
-
-    if (!validation.isValid) {
-        alert(validation.message);
+    // Basic validation - just ensure it's a positive number
+    if (newMax.lte(0)) {
+        alert('Gas cost must be greater than 0');
         e.target.value = state.maxGlobalGas.toString();
         return;
     }
@@ -347,16 +406,9 @@ function handleMinTimeIntervalChange(e) {
     const Decimal = getDecimal();
     let newMin = new Decimal(e.target.value);
 
-    // Ensure min doesn't exceed max
-    if (newMin.gt(state.maxTimeInterval)) {
-        newMin = state.maxTimeInterval;
-        e.target.value = newMin.toString();
-    }
-
-    const validation = validateTimeInterval(newMin);
-
-    if (!validation.isValid) {
-        alert(validation.message);
+    // Basic validation - just ensure it's a positive number
+    if (newMin.lte(0)) {
+        alert('Time interval must be greater than 0');
         e.target.value = state.minTimeInterval.toString();
         return;
     }
@@ -378,16 +430,9 @@ function handleMaxTimeIntervalChange(e) {
     const Decimal = getDecimal();
     let newMax = new Decimal(e.target.value);
 
-    // Ensure max doesn't go below min
-    if (newMax.lt(state.minTimeInterval)) {
-        newMax = state.minTimeInterval;
-        e.target.value = newMax.toString();
-    }
-
-    const validation = validateTimeInterval(newMax);
-
-    if (!validation.isValid) {
-        alert(validation.message);
+    // Basic validation - just ensure it's a positive number
+    if (newMax.lte(0)) {
+        alert('Time interval must be greater than 0');
         e.target.value = state.maxTimeInterval.toString();
         return;
     }
@@ -497,40 +542,21 @@ export function validateSettings(settings) {
         };
     }
 
-    // Validate gas limits
+    // Basic validation for gas limits - just ensure they're positive
     const Decimal = getDecimal();
-    const gasValidation = validateGas(settings.maxGlobalGas, settings.minGlobalGas, new Decimal('1'));
-    if (!gasValidation.isValid) {
+    if (settings.minGlobalGas.lte(0) || settings.maxGlobalGas.lte(0)) {
         return {
             isValid: false,
-            error: gasValidation.message,
+            error: 'Gas costs must be greater than 0',
             field: 'globalGas'
         };
     }
 
-    // Validate time intervals
-    const minTimeValidation = validateTimeInterval(settings.minTimeInterval);
-    if (!minTimeValidation.isValid) {
+    // Basic validation for time intervals - just ensure they're positive
+    if (settings.minTimeInterval.lte(0) || settings.maxTimeInterval.lte(0)) {
         return {
             isValid: false,
-            error: minTimeValidation.message,
-            field: 'minTimeInterval'
-        };
-    }
-
-    const maxTimeValidation = validateTimeInterval(settings.maxTimeInterval);
-    if (!maxTimeValidation.isValid) {
-        return {
-            isValid: false,
-            error: maxTimeValidation.message,
-            field: 'maxTimeInterval'
-        };
-    }
-
-    if (settings.minTimeInterval.gt(settings.maxTimeInterval)) {
-        return {
-            isValid: false,
-            error: 'Minimum time interval cannot be greater than maximum',
+            error: 'Time intervals must be greater than 0',
             field: 'timeInterval'
         };
     }

@@ -66,6 +66,7 @@ function initializeState() {
  */
 export let state = {
     tokens: [],
+    wallets: [],  // Array of Wallet instances
     maxTokens: 20,
     isPaused: false,
     currentTxNumber: 0,
@@ -78,7 +79,7 @@ export let state = {
     activeTransactions: new Set(),
     minGlobalGas: null,
     maxGlobalGas: null,
-    currentWalletId: null,
+    currentWalletId: 1,  // Start with wallet 1
     walletIntervals: new Map(),
     startTime: Date.now(),
     maxRoutingHops: 3,
@@ -224,12 +225,17 @@ export function getTransactionsPerMinute() {
  */
 export function updateAllTokenPrices() {
     const Decimal = getDecimal();
-    const visited = new Set();
 
-    // First pass: update all WPLS-paired tokens (direct calculation)
-    const wplsPairedTokens = state.tokens.filter(t => t.pairType === 'WPLS');
-    wplsPairedTokens.forEach(token => {
-        token.calculateTokenPriceUSD(visited);
+    // CRITICAL: Invalidate ALL price caches first to force recalculation
+    state.tokens.forEach(token => {
+        token.priceLastUpdated = 0;
+    });
+
+    // First pass: update all USD and WPLS-paired tokens (direct calculation)
+    const directPairedTokens = state.tokens.filter(t => t.pairType === 'USD' || t.pairType === 'WPLS');
+    directPairedTokens.forEach(token => {
+        const freshVisited = new Set();  // Fresh Set for each token
+        token.calculateTokenPriceUSD(freshVisited);
     });
 
     // Iterative passes: update token-paired tokens until prices stabilize
@@ -244,7 +250,11 @@ export function updateAllTokenPrices() {
         const tokenPairedTokens = state.tokens.filter(t => t.pairType === 'TOKEN');
         tokenPairedTokens.forEach(token => {
             const oldPrice = token.cachedUSDPrice;
-            token.calculateTokenPriceUSD(visited);
+            // Force recalculation by invalidating cache
+            token.priceLastUpdated = 0;
+            // Create fresh visited Set for each token to properly detect circular dependencies
+            const freshVisited = new Set();
+            token.calculateTokenPriceUSD(freshVisited);
 
             // Check if price changed significantly (>0.01%)
             if (!oldPrice.isZero()) {

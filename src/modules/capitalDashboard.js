@@ -152,7 +152,7 @@ function updateStressTest(percentChange) {
         const vulnToken = state.tokens.find(t => t.id === vuln.tokenId);
         const vulnTokenName = vulnToken ? vulnToken.name : `Token ${vuln.tokenId}`;
         html += `<div class="stress-impact-item vulnerable">`;
-        html += `<strong>⚠️ Most Vulnerable: ${vulnTokenName}</strong><br>`;
+        html += `<strong>Most Vulnerable: ${vulnTokenName}</strong><br>`;
         html += `Depth: ${vuln.depth} hops | `;
         html += `Impact: ${vuln.changePercent > 0 ? '+' : ''}${vuln.changePercent.toFixed(2)}%<br>`;
         html += `Value: $${vuln.originalValue.toFixed(2)} → $${vuln.newValue.toFixed(2)}`;

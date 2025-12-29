@@ -10,6 +10,11 @@ import { state, initializeStateValues } from './modules/state.js';
 import { validatePositiveNumber, validateWalletId } from './utils/validators.js';
 import { initializeCapitalDashboard } from './modules/capitalDashboard.js';
 import { initializeCascadePreset } from './modules/cascadePreset.js';
+import { initializeWalletSystem } from './modules/wallet.js';
+import { initializeSwapCard, updateSwapWallet, updateSwapBalances } from './modules/swapCard.js';
+import { initializeReflectionBurnUI, updateTokenSelectOptions } from './modules/reflectionBurn.js';
+import { initializeTradingUI } from './modules/tradingStrategies.js';
+import { initializeSidebar } from './modules/sidebar.js';
 
 /**
  * Verify Decimal.js is loaded and configured
@@ -54,8 +59,14 @@ function initializeApp() {
             window.state = state;
         }
 
+        // Initialize wallet system
+        initializeWalletSystem();
+
         // Initialize UI components
         initializePage();
+
+        // Initialize sidebar navigation
+        initializeSidebar();
 
         // Initialize settings
         initializeSettings();
@@ -65,6 +76,15 @@ function initializeApp() {
 
         // Initialize cascade preset
         initializeCascadePreset();
+
+        // Initialize swap card
+        initializeSwapCard();
+
+        // Initialize reflection/burn mechanics UI
+        initializeReflectionBurnUI();
+
+        // Initialize trading strategies UI
+        initializeTradingUI();
 
         // Start metrics updates
         startMetricsUpdate();
@@ -86,6 +106,11 @@ function bindEventHandlers() {
     // Buy button handler
     if (elements.buyButton) {
         elements.buyButton.addEventListener('click', handleBuy);
+    }
+
+    // Sell button handler
+    if (elements.sellButton) {
+        elements.sellButton.addEventListener('click', handleSell);
     }
 
     // Add funds button handler
@@ -134,11 +159,11 @@ async function handleBuy() {
         return;
     }
 
-    const selectedTokenId = parseInt(elements.selectPlsToken?.value);
+    const selectedTokenId = parseInt(elements.selectToken?.value);
     const selectedToken = state.tokens.find(t => t.id === selectedTokenId);
-    
+
     if (!selectedToken) {
-        alert('Please select a valid token to start the transaction');
+        alert('Please select a valid token to buy');
         return;
     }
 
@@ -155,6 +180,10 @@ async function handleBuy() {
         return;
     }
 
+    // Update wallet balance display
+    const { updateWalletBalanceDisplay } = await import('./modules/ui.js');
+    await updateWalletBalanceDisplay();
+
     // Clear input on success
     if (elements.buyAmount) {
         elements.buyAmount.value = '';
@@ -162,9 +191,65 @@ async function handleBuy() {
 }
 
 /**
+ * Handle sell button click
+ * @returns {Promise<void>}
+ */
+async function handleSell() {
+    const Decimal = window.Decimal;
+    const tokenAmount = new Decimal(elements.sellAmount?.value || 0);
+    const amountValidation = validatePositiveNumber(tokenAmount);
+    if (!amountValidation.isValid) {
+        alert(amountValidation.message);
+        return;
+    }
+
+    const selectedWallet = elements.selectWallet?.value;
+    const walletValidation = validateWalletId(selectedWallet);
+    if (!walletValidation.isValid) {
+        alert('Please select a wallet');
+        return;
+    }
+
+    if (state.tokens.length === 0) {
+        alert('No tokens available');
+        return;
+    }
+
+    const selectedTokenId = parseInt(elements.selectToken?.value);
+    const selectedToken = state.tokens.find(t => t.id === selectedTokenId);
+
+    if (!selectedToken) {
+        alert('Please select a valid token to sell');
+        return;
+    }
+
+    // Process the sell transaction
+    const { processSell } = await import('./modules/transactions.js');
+    const result = await processSell({
+        tokenAmount,
+        walletId: selectedWallet,
+        tokenId: selectedTokenId
+    });
+
+    if (!result.success) {
+        alert(result.error);
+        return;
+    }
+
+    // Update wallet balance display
+    const { updateWalletBalanceDisplay } = await import('./modules/ui.js');
+    await updateWalletBalanceDisplay();
+
+    // Clear input on success
+    if (elements.sellAmount) {
+        elements.sellAmount.value = '';
+    }
+}
+
+/**
  * Handle add funds button click
  */
-function handleAddFunds() {
+async function handleAddFunds() {
     const Decimal = window.Decimal;
     const amount = new Decimal(elements.addPlsAmount?.value || 0);
     const amountValidation = validatePositiveNumber(amount);
@@ -173,22 +258,17 @@ function handleAddFunds() {
         return;
     }
 
-    const selectedTokenId = parseInt(elements.selectPlsToken?.value);
-    if (!selectedTokenId) {
-        alert('Please select a token to add PLS to');
-        return;
-    }
-
-    // Add PLS to selected token
-    const result = addPls({
-        tokenId: selectedTokenId,
-        amount
-    });
+    // Add PLS to current wallet
+    const result = addPls({ amount });
 
     if (!result.success) {
         alert(result.error);
         return;
     }
+
+    // Update wallet balance display
+    const { updateWalletBalanceDisplay } = await import('./modules/ui.js');
+    await updateWalletBalanceDisplay();
 
     // Clear input on success
     if (elements.addPlsAmount) {
@@ -199,7 +279,7 @@ function handleAddFunds() {
 /**
  * Handle add all funds button click
  */
-function handleAddAllFunds() {
+async function handleAddAllFunds() {
     const Decimal = window.Decimal;
     const amount = new Decimal(elements.addPlsAmount?.value || 0);
     const amountValidation = validatePositiveNumber(amount);
@@ -208,13 +288,17 @@ function handleAddAllFunds() {
         return;
     }
 
-    // Add PLS to all tokens
+    // Add PLS to all wallets
     const result = addPlsToAll(amount);
 
     if (!result.success) {
         alert(result.error);
         return;
     }
+
+    // Update wallet balance display
+    const { updateWalletBalanceDisplay } = await import('./modules/ui.js');
+    await updateWalletBalanceDisplay();
 
     // Clear input on success
     if (elements.addPlsAmount) {
